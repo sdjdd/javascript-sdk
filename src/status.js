@@ -7,7 +7,7 @@ module.exports = function(AV) {
   const getUser = (options = {}) => {
     const sessionToken = getSessionToken(options);
     if (sessionToken) {
-      return AV.User._fetchUserBySessionToken(getSessionToken(options));
+      return AV.User._fetchUserBySessionToken(sessionToken);
     }
     return AV.User.currentAsync();
   };

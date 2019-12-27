@@ -38,6 +38,7 @@ require('./insight')(AV);
 
 AV.Conversation = require('./conversation');
 require('./leaderboard');
+require('./friendship');
 module.exports = AV;
 
 /**
