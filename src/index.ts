@@ -1,1 +1,1 @@
-export * from './av';
+export { default } from './av';
