@@ -3,10 +3,10 @@ import { App } from '../app';
 const readonlyAttrs = new Set(['objectId', 'createdAt', 'updatedAt']);
 
 export class AVObject {
-  private _className: string;
-  private _attrs: { [key: string]: any } = {};
   private _app: App;
-  private _url: string;
+  private _className: string;
+  private _classURL: string;
+  private _attrs: { [key: string]: any } = {};
 
   static extend(className: string) {
     return new Proxy(AVObject, {
@@ -17,7 +17,6 @@ export class AVObject {
   static createWithoutData(className: string, objectId: string) {
     const obj = new AVObject(className);
     obj._attrs.objectId = objectId;
-    obj._url += '/' + objectId;
     return obj;
   }
 
@@ -26,7 +25,7 @@ export class AVObject {
       throw new TypeError('className must be provided');
     }
     this._className = className;
-    this._url = `/1.1/classes/${this.className}`;
+    this._classURL = `/1.1/classes/${this.className}`;
   }
 
   get className() {
@@ -40,6 +39,9 @@ export class AVObject {
       throw new Error(''); // TODO
     }
     return this._app;
+  }
+  get url() {
+    return this._classURL + '/' + this.id;
   }
 
   set(key: string, value: any) {
@@ -59,7 +61,7 @@ export class AVObject {
       throw new Error(''); // TODO
     }
     const client = this.app._httpClient;
-    const { body } = await client.get(this._url);
+    const { body } = await client.get(this.url);
     this._attrs = { ...body };
     return this;
   }
@@ -71,11 +73,10 @@ export class AVObject {
     readonlyAttrs.forEach((name) => delete data[name]);
 
     if (this.has('objectId')) {
-      const { body } = await client.put(this._url, data);
+      const { body } = await client.put(this.url, data);
       this._attrs.updatedAt = body.updatedAt;
     } else {
-      const { body } = await client.post(this._url, data);
-      this._url += '/' + body.objectId;
+      const { body } = await client.post(this._classURL, data);
       Object.assign(this._attrs, body);
     }
     return this;
@@ -83,7 +84,7 @@ export class AVObject {
 
   async destroy() {
     const client = this._app._httpClient;
-    await client.delete(this._url);
+    await client.delete(this.url);
     return this;
   }
 
