@@ -2,19 +2,21 @@ import { App } from '../app';
 
 const readonlyAttrs = new Set(['objectId', 'createdAt', 'updatedAt']);
 
+type Entry = string | Entry[];
+
 export class AVObject {
   private _app: App;
   private _className: string;
   private _classURL: string;
-  private _attrs: { [key: string]: any } = {};
+  private _attrs: { [key: string]: Entry } = {};
 
-  static extend(className: string) {
+  static extend(className: string): typeof AVObject {
     return new Proxy(AVObject, {
       construct: () => new AVObject(className),
     });
   }
 
-  static createWithoutData(className: string, objectId: string) {
+  static createWithoutData(className: string, objectId: string): AVObject {
     const obj = new AVObject(className);
     obj._attrs.objectId = objectId;
     return obj;
@@ -28,23 +30,23 @@ export class AVObject {
     this._classURL = `/1.1/classes/${this.className}`;
   }
 
-  get className() {
+  get className(): string {
     return this._className;
   }
-  get id() {
-    return this._attrs.objectId;
+  get id(): string {
+    return this._attrs.objectId as string;
   }
-  get app() {
+  get app(): App {
     if (this._app === undefined) {
       throw new Error(''); // TODO
     }
     return this._app;
   }
-  get url() {
+  get url(): string {
     return this._classURL + '/' + this.id;
   }
 
-  set(key: string, value: any) {
+  set(key: string, value: Entry): this {
     if (readonlyAttrs.has(key)) {
       throw new Error('cannot set readonly attribute');
     }
@@ -52,11 +54,11 @@ export class AVObject {
     return this;
   }
 
-  get(key: string) {
+  get(key: string): Entry {
     return this._attrs[key];
   }
 
-  async fetch() {
+  async fetch(): Promise<this> {
     if (!this.has('objectId')) {
       throw new Error(''); // TODO
     }
@@ -66,10 +68,10 @@ export class AVObject {
     return this;
   }
 
-  async save() {
+  async save(): Promise<this> {
     const client = this.app._httpClient;
 
-    let data = { ...this._attrs };
+    const data = { ...this._attrs };
     readonlyAttrs.forEach((name) => delete data[name]);
 
     if (this.has('objectId')) {
@@ -82,18 +84,18 @@ export class AVObject {
     return this;
   }
 
-  async destroy() {
+  async destroy(): Promise<this> {
     const client = this._app._httpClient;
     await client.delete(this.url);
     return this;
   }
 
-  bindApp(app: App) {
+  bindApp(app: App): this {
     this._app = app;
     return this;
   }
 
-  has(key: string) {
+  has(key: string): boolean {
     return this._attrs[key] !== undefined;
   }
 }
