@@ -1,14 +1,16 @@
 import got, { Method } from 'got';
 import { AppInfo } from '../app';
 
+type Header = Record<string, string>;
+type Body = Record<string, string>;
+
 export interface Response {
-  headers: { [key: string]: string };
-  body: any;
+  headers: Header;
+  body: Body;
 }
 
-export default class HttpClient {
-  public headers: { [key: string]: string } = {};
-
+export class HttpClient {
+  public headers: Header = {};
   public baseURL = '';
 
   constructor(appInfo?: AppInfo) {
@@ -24,7 +26,7 @@ export default class HttpClient {
     return this;
   }
 
-  request(method: string, url: string, data?: any): Promise<Response> {
+  request(method: string, url: string, data?: Body): Promise<Response> {
     return got(this.baseURL + url, {
       method: method as Method,
       headers: this.headers,
@@ -32,8 +34,8 @@ export default class HttpClient {
       responseType: 'json',
     }).then(function (res) {
       return {
-        headers: res.headers as { [key: string]: string },
-        body: res.body as any,
+        headers: res.headers as Header,
+        body: res.body as Body,
       };
     });
   }
@@ -42,15 +44,15 @@ export default class HttpClient {
     return this.request('GET', url);
   }
 
-  put(url: string, data?: any): Promise<Response> {
+  put(url: string, data?: Body): Promise<Response> {
     return this.request('PUT', url, data);
   }
 
-  post(url: string, data?: any): Promise<Response> {
+  post(url: string, data?: Body): Promise<Response> {
     return this.request('POST', url, data);
   }
 
-  delete(url: string, data?: any): Promise<Response> {
+  delete(url: string, data?: Body): Promise<Response> {
     return this.request('DELETE', url, data);
   }
 }

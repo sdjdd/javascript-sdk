@@ -1,31 +1,14 @@
 import { App } from '../app';
 
-const readonlyAttrs = new Set(['objectId', 'createdAt', 'updatedAt']);
-
-type Entry = string | Entry[];
+type Entry = string;
 
 export class AVObject {
   private _app: App;
   private _className: string;
   private _classURL: string;
-  private _attrs: { [key: string]: Entry } = {};
+  private _attrs: Record<string, Entry> = {};
 
-  static extend(className: string): typeof AVObject {
-    return new Proxy(AVObject, {
-      construct: () => new AVObject(className),
-    });
-  }
-
-  static createWithoutData(className: string, objectId: string): AVObject {
-    const obj = new AVObject(className);
-    obj._attrs.objectId = objectId;
-    return obj;
-  }
-
-  constructor(className?: string) {
-    if (className === undefined) {
-      throw new TypeError('className must be provided');
-    }
+  constructor(className: string) {
     this._className = className;
     this._classURL = `/1.1/classes/${this.className}`;
   }
@@ -46,9 +29,16 @@ export class AVObject {
     return this._classURL + '/' + this.id;
   }
 
+  isEmpty(): boolean {
+    return Object.keys(this._attrs).length === 0;
+  }
+
   set(key: string, value: Entry): this {
-    if (readonlyAttrs.has(key)) {
-      throw new Error('cannot set readonly attribute');
+    if (key === 'createdAt' || key === 'updatedAt') {
+      throw new Error('Cannot set readonly attribute');
+    }
+    if (key === 'objectId' && !this.isEmpty()) {
+      throw new Error('"objectId" can only be set for empty object');
     }
     this._attrs[key] = value;
     return this;
@@ -56,6 +46,10 @@ export class AVObject {
 
   get(key: string): Entry {
     return this._attrs[key];
+  }
+
+  entries(): [string, Entry][] {
+    return Object.entries(this._attrs);
   }
 
   async fetch(): Promise<this> {
@@ -72,7 +66,8 @@ export class AVObject {
     const client = this.app._httpClient;
 
     const data = { ...this._attrs };
-    readonlyAttrs.forEach((name) => delete data[name]);
+    delete data.createdAt;
+    delete data.updatedAt;
 
     if (this.has('objectId')) {
       const { body } = await client.put(this.url, data);

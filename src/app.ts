@@ -1,5 +1,4 @@
 import { HttpClient } from './http-client';
-import { LeanStorage } from './storage/storage';
 
 export interface InitOptions {
   appId: string;
@@ -27,17 +26,13 @@ export class App {
     this._httpClient = new HttpClient(this._appInfo);
   }
 
-  get id() {
+  get id(): string {
     return this._appInfo.appId;
   }
-  get key() {
+  get key(): string {
     return this._appInfo.appKey;
   }
-  get serverURL() {
+  get serverURL(): string {
     return this._appInfo.serverURL;
-  }
-
-  object(className: string) {
-    return new LeanStorage(this, className);
   }
 }
