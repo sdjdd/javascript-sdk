@@ -2,7 +2,7 @@ import got, { Method } from 'got';
 import { AppInfo } from '../app';
 
 type Header = Record<string, string>;
-type Body = Record<string, string>;
+type Body = Record<string, unknown>;
 
 export interface Response {
   headers: Header;

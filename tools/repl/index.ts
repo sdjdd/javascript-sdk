@@ -1,10 +1,18 @@
-const Repl = require('repl');
+import Repl = require('repl');
+import path = require('path');
 
 import * as context from './context';
 
 printUsage();
 
 const repl = Repl.start('leancloud > ');
+const historyPath = path.resolve(__dirname, '.history');
+repl.setupHistory(historyPath, function (err) {
+  if (err) {
+    console.error(err);
+    process.exit(-1);
+  }
+});
 
 Object.assign(repl.context, context);
 
@@ -13,6 +21,15 @@ function printUsage() {
 
 Available Commands:
 
-.exit - exits the REPL
+  .exit - exits the REPL
+
+Available Classes:
+
+  AVObject
+
+Available Objects:
+
+  env - current environment
+  app - instance of AV.App with env
 `);
 }
