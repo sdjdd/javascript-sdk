@@ -1,6 +1,7 @@
 import * as env from '../../env';
-import { AVObject } from '../../src/storage/object';
 import { App } from '../../src/app';
+import { AVObject } from '../../src/AVObject';
+import { Node as PlatformNode } from '../../src/platforms/Node';
 
 import AV from '../../src/av';
 
@@ -10,4 +11,5 @@ export const app = new App({
   appId: env.appId,
   appKey: env.appKey,
   serverURL: env.serverURL,
+  platform: PlatformNode,
 });
