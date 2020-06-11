@@ -1,7 +1,7 @@
-import { HTTPClient } from '../../core/http/HTTPClient';
+import { HTTPClient } from '../core/http/HTTPClient';
 import got, { Method } from 'got';
-import { Header, Body, Response } from '../../core/http/HTTPClient';
-import { AppInfo } from '../../core/app';
+import { Header, Body, Response } from '../core/http/HTTPClient';
+import { AppInfo } from '../core/app';
 
 export class NodeHTTPClient extends HTTPClient {
   constructor(appInfo?: AppInfo) {

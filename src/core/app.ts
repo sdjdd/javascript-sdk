@@ -1,12 +1,9 @@
 import { HTTPClient } from './http';
-import { AVObject } from '../storage/object';
-import { Platform } from '../platforms';
 
 export interface InitOptions {
   appId: string;
   appKey: string;
   serverURL: string;
-  platform: Platform;
 }
 
 export interface AppInfo {
@@ -26,7 +23,6 @@ export class App {
       appKey: options.appKey,
       serverURL: options.serverURL,
     };
-    this._client = options.platform.createHTTPClient(this._info);
   }
 
   get info(): AppInfo {
@@ -40,12 +36,5 @@ export class App {
   }
   get serverURL(): string {
     return this._info.serverURL;
-  }
-
-  object(className: string): AVObject {
-    return new AVObject({
-      className,
-      httpClient: this._client,
-    });
   }
 }

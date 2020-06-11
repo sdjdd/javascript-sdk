@@ -3,14 +3,14 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 
 export default {
-  input: 'src/index.ts',
+  input: 'src/Node/index.ts',
   output: [
     {
-      file: 'dist/av.js',
+      file: 'dist/Node/av.js',
       format: 'cjs',
     },
     {
-      file: 'dist/av.esm.js',
+      file: 'dist/Node/av.esm.js',
       format: 'es',
     },
   ],
