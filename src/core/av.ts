@@ -1,5 +1,5 @@
 import { App } from './app';
-import { AVObject } from './storage/object';
+import { AVObject } from '../storage/object';
 
 export default {
   App,

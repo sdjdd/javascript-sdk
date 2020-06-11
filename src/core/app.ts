@@ -1,6 +1,6 @@
 import { HTTPClient } from './http';
-import { AVObject } from './storage/object';
-import { Platform } from './platforms';
+import { AVObject } from '../storage/object';
+import { Platform } from '../platforms';
 
 export interface InitOptions {
   appId: string;

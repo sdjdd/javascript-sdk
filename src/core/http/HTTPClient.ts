@@ -1,5 +1,4 @@
 import { AppInfo } from '../app';
-import { KEY_OBJECT_ID } from '../AVObject';
 
 const PATH_CLASSES = '/1.1/classes';
 
@@ -61,10 +60,11 @@ export abstract class HTTPClient {
 
   async updateObject(
     className: string,
+    objectId: string,
     data: Record<string, unknown>,
     fetchWhenSave = false
   ): Promise<Record<string, unknown>> {
-    let path = PATH_CLASSES + '/' + className + '/' + data[KEY_OBJECT_ID];
+    let path = PATH_CLASSES + '/' + className + '/' + objectId;
     if (fetchWhenSave) {
       path += '?fetchWhenSave=true';
     }

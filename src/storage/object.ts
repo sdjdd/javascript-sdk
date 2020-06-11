@@ -1,5 +1,5 @@
-import { AppInfo } from '../app';
-import { HTTPClient } from '../http';
+import { AppInfo } from '../core/app';
+import { HTTPClient } from '../core/http';
 import { NodeHTTPClient } from '../platforms/Node/HTTPClient';
 
 export class Operation {
