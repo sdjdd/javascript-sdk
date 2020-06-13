@@ -76,10 +76,12 @@ export class AVObject {
   }
 
   private _addOperation(key: string, op: Operation) {
-    const oldOp = this._operations[key]; // keep old Operation
-    const oldVal = this.get(key);
-    this.set(key, op.apply(oldVal)); // will remove old Operation
-    this._operations[key] = op.merge(oldOp);
+    if (this._operations[key] !== undefined) {
+      throw new Error(
+        'Conflict with unsaved operation, please save or revert before adding a new operation'
+      );
+    }
+    this._operations[key] = op;
   }
 
   increment(key: string, amount = 1): this {
