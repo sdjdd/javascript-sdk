@@ -13,12 +13,7 @@ export const KEY_OBJECT_ID = 'objectId';
 
 const RESERVED_KEYS = new Set([KEY_CREATED_AT, KEY_UPDATED_AT, KEY_OBJECT_ID]);
 
-export interface AVObjectInitOptions {
-  className: string;
-  app: App;
-}
-
-export class AVObject {
+export class LCObject {
   public app: App;
 
   protected _className: string;
