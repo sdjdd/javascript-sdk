@@ -1,4 +1,4 @@
-import { App } from './app';
+import { App } from '../app/app';
 import {
   Operation,
   AddOperation,
@@ -143,7 +143,7 @@ export class LCObject {
   }
 
   async fetch(keys?: string[]): Promise<this> {
-    const serverData = await this.app._client.getObject(
+    const serverData = await this.app.client.getObject(
       this._className,
       this.id
     );
@@ -164,13 +164,13 @@ export class LCObject {
 
     let serverData: Record<string, unknown>;
     if (this.id === undefined) {
-      serverData = await this.app._client.createObject(
+      serverData = await this.app.client.createObject(
         this._className,
         this.marshal(),
         fetchWhenSave
       );
     } else {
-      serverData = await this.app._client.updateObject(
+      serverData = await this.app.client.updateObject(
         this._className,
         this.id,
         this.marshal(),

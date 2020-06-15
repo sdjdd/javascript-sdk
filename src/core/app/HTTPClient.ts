@@ -1,4 +1,4 @@
-import { AppInfo } from '../app';
+import { AppInfo } from './App';
 
 const PATH_CLASSES = '/1.1/classes';
 

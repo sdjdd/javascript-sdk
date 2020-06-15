@@ -1,10 +1,10 @@
-import { App as CoreApp, InitOptions } from '../core';
+import { App as CoreApp, AppConfig } from '../core';
 import { NodeHTTPClient } from './HTTPClient';
 
 export * from '../core';
 export class App extends CoreApp {
-  constructor(options: InitOptions) {
+  constructor(options: AppConfig) {
     super(options);
-    this._client = new NodeHTTPClient(this.info);
+    this.client = new NodeHTTPClient(this.info);
   }
 }
