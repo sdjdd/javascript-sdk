@@ -12,7 +12,8 @@
     "build": "npm run clean && rollup -c",
     "test": "mocha",
     "coverage": "nyc npm run test",
-    "repl": "ts-node ./tools/repl"
+    "repl": "ts-node ./tools/repl",
+    "lint": "eslint --ext=ts,js --max-warnings=0 ."
   },
   "dependencies": {
     "got": "^11.2.0"
