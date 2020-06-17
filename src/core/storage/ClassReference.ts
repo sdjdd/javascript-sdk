@@ -8,7 +8,7 @@ export class ClassReference extends Query {
   }
 
   object(id?: string): ObjectReference {
-    return new ObjectReference(this, id);
+    return new ObjectReference(this._storage, this.name, id);
   }
 
   async add(data: Record<string, unknown>): Promise<ObjectReference> {

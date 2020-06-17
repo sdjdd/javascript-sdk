@@ -25,11 +25,13 @@ Available Commands:
 
 Available Classes:
 
-  AVObject
+  AV.App
+  AV.Value
 
 Available Objects:
 
   env - current environment
   app - instance of AV.App with env
+  db  - instance of AV.Storage from app.storage()
 `);
 }

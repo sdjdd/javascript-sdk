@@ -1,61 +1,99 @@
-import { ClassReference } from './ClassReference';
+import { Storage } from './Storage';
+import { AdvancedType, isAdvancedType } from './AdvancedType';
+import { v4 as uuid } from 'uuid';
 
-async function createObject(
-  classRef: ClassReference,
-  data: Record<string, unknown>
-): Promise<string> {
-  const client = classRef._storage.app.client;
-  const path = `/1.1/classes/${classRef.name}`;
-  const { body } = await client.post(path, data);
-  return body.objectId as string;
+const RESERVED_KEYS = new Set(['objectId', 'createdAt', 'updatedAt']);
+function removeReservedKeys(obj: Record<string, unknown>) {
+  Object.keys(obj).forEach((key) => {
+    if (RESERVED_KEYS.has(key)) {
+      delete obj[key];
+    }
+  });
 }
 
-async function updateObject(
-  classRef: ClassReference,
-  id: string,
-  data: Record<string, unknown>
-) {
-  const client = classRef._storage.app.client;
-  const path = `/1.1/classes/${classRef.name}/${id}`;
-  await client.put(path, data);
-}
-
-async function deleteObject(classRef: ClassReference, id: string) {
-  const client = classRef._storage.app.client;
-  const path = `/1.1/classes/${classRef.name}/${id}`;
-  await client.delete(path);
-}
-
-async function getObject(classRef: ClassReference, id: string) {
-  const client = classRef._storage.app.client;
-  const path = `/1.1/classes/${classRef.name}/${id}`;
-  const { body } = await client.get(path);
-  return body;
+export interface LCObject {
+  objectId: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
 export class ObjectReference {
-  constructor(private _clazz: ClassReference, public id?: string) {}
+  constructor(
+    public storage: Storage,
+    public className: string,
+    public objectId?: string
+  ) {}
 
-  get className(): string {
-    return this._clazz.name;
+  toJSON(): Pointer {
+    return new Pointer(this.className, this.objectId);
   }
 
-  async set(data: Record<string, unknown>): Promise<void> {
-    if (this.id === undefined) {
-      this.id = await createObject(this._clazz, data);
+  async set(obj: Record<string, unknown>): Promise<void> {
+    removeReservedKeys(obj);
+    if (this.objectId === undefined) {
+      this.objectId = await this.storage._createObject(this.className, obj);
     } else {
-      await updateObject(this._clazz, this.id, data);
+      await this.storage._updateObject(this.className, this.objectId, obj);
     }
   }
 
   async delete(): Promise<void> {
-    if (this.id === undefined) {
-      throw new Error('objectId must be provided');
+    if (this.objectId === undefined) {
+      return;
     }
-    await deleteObject(this._clazz, this.id);
+    await this.storage._deleteObject(this.className, this.objectId);
   }
 
-  get(): Promise<unknown> {
-    return getObject(this._clazz, this.id);
+  async get(): Promise<unknown> {
+    const data = await this.storage._getObject(this.className, this.objectId);
+    this._parseAdvancedType(data);
+    return data;
+  }
+
+  private _parseAdvancedType(data: Record<string, unknown>) {
+    Object.entries(data).forEach(([key, value]) => {
+      if (isAdvancedType(value)) {
+        const adv = value as AdvancedType;
+        switch (adv.__type) {
+          case 'Pointer':
+            data[key] = this.storage._parsePointer(adv as Pointer);
+            break;
+          case 'GeoPoint':
+        }
+      }
+    });
   }
 }
+
+export class GeoPoint implements AdvancedType {
+  __type = 'GeoPoint';
+  constructor(public latitude: number, public longitude: number) {}
+}
+
+export class Pointer implements AdvancedType {
+  __type = 'Pointer';
+  constructor(public className: string, public objectId: string) {}
+}
+
+export class File implements AdvancedType {
+  __type = 'File';
+  key: string;
+
+  constructor(public name: string, public data: string | ArrayBuffer) {
+    const ext = name.split('.').pop();
+    this.key = uuid();
+  }
+}
+
+interface FileProvider {
+  name: string;
+  upload(file: File, token: string);
+}
+
+// export class FileProviderQiniu implements FileProvider {
+//   name = 'qiniu';
+//   constructor(private _client: HTTPClient) {}
+//   upload(file: File, url: string, token: string) {
+//     this._client.post(url, );
+//   }
+// }

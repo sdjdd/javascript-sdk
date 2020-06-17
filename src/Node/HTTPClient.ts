@@ -1,7 +1,8 @@
 import { HTTPClient } from '../core/app/HTTPClient';
-import got, { Method } from 'got';
+import got, { Method, HTTPError, Response as GotResponse } from 'got';
 import { Header, Body, Response } from '../core/app/HTTPClient';
 import { AppInfo } from '../core/app/app';
+import { RESTAPIError } from '../core/errors';
 
 export class NodeHTTPClient extends HTTPClient {
   constructor(appInfo?: AppInfo) {
@@ -15,11 +16,16 @@ export class NodeHTTPClient extends HTTPClient {
       headers: this.headers,
       json: data,
       responseType: 'json',
-    }).then(function (res) {
-      return {
-        headers: res.headers as Header,
-        body: res.body as Body,
-      };
-    });
+    })
+      .then(function (res) {
+        return {
+          headers: res.headers as Header,
+          body: res.body as Body,
+        };
+      })
+      .catch(function (err: HTTPError) {
+        const res = err.response as GotResponse<RESTAPIError>;
+        throw new Error(res.body.error);
+      });
   }
 }

@@ -13,7 +13,7 @@ export interface AppInfo {
   serverURL: string;
 }
 
-export class App {
+export abstract class App {
   name: string;
   client: HTTPClient;
   info: AppInfo;

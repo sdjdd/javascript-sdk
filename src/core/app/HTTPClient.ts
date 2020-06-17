@@ -1,7 +1,5 @@
 import { AppInfo } from './App';
 
-const PATH_CLASSES = '/1.1/classes';
-
 export type Header = Record<string, string>;
 export type Body = Record<string, unknown>;
 
@@ -11,8 +9,8 @@ export interface Response {
 }
 
 export abstract class HTTPClient {
-  public headers: Header = {};
-  public baseURL = '';
+  headers: Header = {};
+  baseURL = '';
 
   constructor(appInfo?: AppInfo) {
     if (appInfo) {
@@ -43,41 +41,5 @@ export abstract class HTTPClient {
 
   delete(url: string, data?: Body): Promise<Response> {
     return this.request('DELETE', url, data);
-  }
-
-  async createObject(
-    className: string,
-    data: Record<string, unknown>,
-    fetchWhenSave = false
-  ): Promise<Record<string, unknown>> {
-    let path = PATH_CLASSES + '/' + className;
-    if (fetchWhenSave) {
-      path += '?fetchWhenSave=true';
-    }
-    const { body } = await this.post(path, data);
-    return body;
-  }
-
-  async updateObject(
-    className: string,
-    objectId: string,
-    data: Record<string, unknown>,
-    fetchWhenSave = false
-  ): Promise<Record<string, unknown>> {
-    let path = PATH_CLASSES + '/' + className + '/' + objectId;
-    if (fetchWhenSave) {
-      path += '?fetchWhenSave=true';
-    }
-    const { body } = await this.put(path, data);
-    return body;
-  }
-
-  async getObject(
-    className: string,
-    objectId: string
-  ): Promise<Record<string, unknown>> {
-    const path = PATH_CLASSES + '/' + className + '/' + objectId;
-    const { body } = await this.get(path);
-    return body;
   }
 }
