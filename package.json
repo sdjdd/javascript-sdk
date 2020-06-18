@@ -16,8 +16,8 @@
     "lint": "eslint --ext=ts,js --max-warnings=0 ."
   },
   "dependencies": {
-    "form-data": "^3.0.0",
-    "got": "^11.2.0",
+    "@types/superagent": "^4.1.7",
+    "superagent": "^5.2.2",
     "uuid": "^8.1.0"
   },
   "devDependencies": {

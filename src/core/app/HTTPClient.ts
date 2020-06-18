@@ -1,45 +1,39 @@
-import { AppInfo } from './App';
+import { Request } from '../Platform';
 
-export type Header = Record<string, string>;
-export type Body = Record<string, unknown>;
-
-export interface Response {
-  headers: Header;
-  body: Body;
-}
-
-export abstract class HTTPClient {
-  headers: Header = {};
+export class HTTPClient {
+  headers: Record<string, string> = {};
   baseURL = '';
 
-  constructor(appInfo?: AppInfo) {
-    if (appInfo) {
-      this.setHeader('X-LC-Id', appInfo.appId);
-      this.setHeader('X-LC-Key', appInfo.appKey);
-      this.baseURL = appInfo.serverURL;
-    }
+  constructor(private _request: Request) {
+    // if (appInfo) {
+    //   this.setHeader('X-LC-Id', appInfo.appId);
+    //   this.setHeader('X-LC-Key', appInfo.appKey);
+    //   this.baseURL = appInfo.serverURL;
+    // }
   }
 
-  abstract request(method: string, url: string, data?: Body): Promise<Response>;
+  request(method: string, url: string, data?: unknown): Promise<unknown> {
+    return this._request(method, url, this.headers, data);
+  }
 
   setHeader(key: string, value: string): this {
     this.headers[key] = value;
     return this;
   }
 
-  get(url: string): Promise<Response> {
+  get(url: string): Promise<unknown> {
     return this.request('GET', url);
   }
 
-  put(url: string, data?: Body): Promise<Response> {
+  put(url: string, data?: unknown): Promise<unknown> {
     return this.request('PUT', url, data);
   }
 
-  post(url: string, data?: Body): Promise<Response> {
+  post(url: string, data?: unknown): Promise<unknown> {
     return this.request('POST', url, data);
   }
 
-  delete(url: string, data?: Body): Promise<Response> {
+  delete(url: string, data?: unknown): Promise<unknown> {
     return this.request('DELETE', url, data);
   }
 }

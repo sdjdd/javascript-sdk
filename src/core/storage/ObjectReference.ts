@@ -1,6 +1,6 @@
-import { Storage } from './Storage';
 import { AdvancedType, isAdvancedType } from './AdvancedType';
 import { v4 as uuid } from 'uuid';
+import { API } from '../app/API';
 
 const RESERVED_KEYS = new Set(['objectId', 'createdAt', 'updatedAt']);
 function removeReservedKeys(obj: Record<string, unknown>) {
@@ -19,7 +19,7 @@ export interface LCObject {
 
 export class ObjectReference {
   constructor(
-    public storage: Storage,
+    public api: API,
     public className: string,
     public objectId?: string
   ) {}
@@ -31,9 +31,9 @@ export class ObjectReference {
   async set(obj: Record<string, unknown>): Promise<void> {
     removeReservedKeys(obj);
     if (this.objectId === undefined) {
-      this.objectId = await this.storage._createObject(this.className, obj);
+      this.objectId = await this.api.createObject(this.className, obj);
     } else {
-      await this.storage._updateObject(this.className, this.objectId, obj);
+      await this.api.updateObject(this.className, this.objectId, obj);
     }
   }
 
@@ -41,11 +41,11 @@ export class ObjectReference {
     if (this.objectId === undefined) {
       return;
     }
-    await this.storage._deleteObject(this.className, this.objectId);
+    await this.api.deleteObject(this.className, this.objectId);
   }
 
   async get(): Promise<unknown> {
-    const data = await this.storage._getObject(this.className, this.objectId);
+    const data = await this.api.getObject(this.className, this.objectId);
     this._parseAdvancedType(data);
     return data;
   }
@@ -56,7 +56,6 @@ export class ObjectReference {
         const adv = value as AdvancedType;
         switch (adv.__type) {
           case 'Pointer':
-            data[key] = this.storage._parsePointer(adv as Pointer);
             break;
           case 'GeoPoint':
         }
@@ -78,10 +77,19 @@ export class Pointer implements AdvancedType {
 export class File implements AdvancedType {
   __type = 'File';
   key: string;
+  name: string;
+  data: string;
+  mime: string;
 
-  constructor(public name: string, public data: string | ArrayBuffer) {
+  constructor(name: string, data: string) {
     const ext = name.split('.').pop();
-    this.key = uuid();
+    if (ext.length > 0) {
+      this.key = uuid() + '.' + ext;
+    } else {
+      this.key = uuid();
+    }
+    this.name = name;
+    this.data = data;
   }
 }
 

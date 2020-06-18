@@ -1,14 +1,9 @@
-import { Storage } from './Storage';
 import { ObjectReference } from './ObjectReference';
 import { Query } from './Query';
 
 export class ClassReference extends Query {
-  constructor(public name: string, public _storage: Storage) {
-    super(name, _storage);
-  }
-
   object(id?: string): ObjectReference {
-    return new ObjectReference(this._storage, this.name, id);
+    return new ObjectReference(this.api, this.className, id);
   }
 
   async add(data: Record<string, unknown>): Promise<ObjectReference> {
