@@ -11,13 +11,14 @@ export interface Response {
   body: unknown;
 }
 
-export interface Platform {
-  userAgent: string;
+export type Upload = (
+  method: string,
+  url: string,
+  data: string,
+  formData?: Record<string, string>
+) => Promise<Response>;
+
+export interface Network {
   request: Request;
-  upload(
-    url: string,
-    name: string,
-    data: string,
-    formData?: Record<string, string>
-  );
+  upload: Upload;
 }

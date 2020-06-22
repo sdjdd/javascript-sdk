@@ -1,10 +1,10 @@
 import * as env from '../../env';
-import * as AV from '../../src/core';
+import * as LC from '../../src/core';
 import { node } from '../../src/Node';
 
-export { env, AV };
+export { env, LC };
 
-export const app = new AV.App({
+export const app = new LC.App({
   appId: env.appId,
   appKey: env.appKey,
   serverURL: env.serverURL,

@@ -25,8 +25,8 @@ Available Commands:
 
 Available Classes:
 
-  AV.App
-  AV.Value
+  LC.App
+  LC.Value
 
 Available Objects:
 

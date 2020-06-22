@@ -1,4 +1,4 @@
-import { AdvancedType, isAdvancedType } from './AdvancedType';
+import { AdvancedType } from './AdvancedType';
 import { v4 as uuid } from 'uuid';
 import { API } from '../app/API';
 
@@ -46,21 +46,7 @@ export class ObjectReference {
 
   async get(): Promise<unknown> {
     const data = await this.api.getObject(this.className, this.objectId);
-    this._parseAdvancedType(data);
     return data;
-  }
-
-  private _parseAdvancedType(data: Record<string, unknown>) {
-    Object.entries(data).forEach(([key, value]) => {
-      if (isAdvancedType(value)) {
-        const adv = value as AdvancedType;
-        switch (adv.__type) {
-          case 'Pointer':
-            break;
-          case 'GeoPoint':
-        }
-      }
-    });
   }
 }
 
@@ -92,16 +78,3 @@ export class File implements AdvancedType {
     this.data = data;
   }
 }
-
-interface FileProvider {
-  name: string;
-  upload(file: File, token: string);
-}
-
-// export class FileProviderQiniu implements FileProvider {
-//   name = 'qiniu';
-//   constructor(private _client: HTTPClient) {}
-//   upload(file: File, url: string, token: string) {
-//     this._client.post(url, );
-//   }
-// }

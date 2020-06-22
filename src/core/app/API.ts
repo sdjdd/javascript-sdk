@@ -1,5 +1,5 @@
-import { Request } from '../Platform';
 import { AppInfo } from './app';
+import { Network } from '../../platform/Network';
 
 export interface RESTAPIError {
   code: number;
@@ -7,26 +7,39 @@ export interface RESTAPIError {
 }
 
 export class API {
-  constructor(public request: Request, public appInfo: AppInfo) {}
+  session: string;
+
+  constructor(
+    public network: Network,
+    public appInfo: AppInfo,
+    public userAgent?: string
+  ) {}
 
   async lcRequest(
     method: string,
     path: string,
     data?: Record<string, unknown>
   ): Promise<Record<string, unknown>> {
-    const res = await this.request(
+    const headers: Record<string, string> = {
+      'X-LC-UA': this.userAgent || 'unknown',
+      'X-LC-Id': this.appInfo.appId,
+      'X-LC-Key': this.appInfo.appKey,
+      'Content-Type': 'application/json',
+    };
+    if (this.session !== undefined) {
+      headers['X-LC-Session'] = this.session;
+    }
+
+    const res = await this.network.request(
       method,
       this.appInfo.serverURL + path,
-      {
-        'X-LC-Id': this.appInfo.appId,
-        'X-LC-Key': this.appInfo.appKey,
-        'Content-Type': 'application/json',
-      },
+      headers,
       data
     );
     if (Math.floor(res.status / 100) !== 2) {
       throw new Error(res.body as string);
     }
+
     if (typeof res.body === 'string') {
       return JSON.parse(res.body);
     }
@@ -83,5 +96,18 @@ export class API {
       metaData: undefined, // metaData is not necessary
     });
     return res as Record<string, string>;
+  }
+
+  async userLogin(
+    username: string,
+    password: string
+  ): Promise<Record<string, unknown>> {
+    const path = `/1.1/login`;
+    const res = await this.lcRequest('POST', path, {
+      username,
+      password,
+    });
+    this.session = res.sessionToken as string;
+    return res;
   }
 }
