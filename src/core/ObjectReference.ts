@@ -1,6 +1,6 @@
 import { AdvancedType } from './AdvancedType';
 import { v4 as uuid } from 'uuid';
-import { API } from '../app/API';
+import { API } from './API';
 
 const RESERVED_KEYS = new Set(['objectId', 'createdAt', 'updatedAt']);
 function removeReservedKeys(obj: Record<string, unknown>) {
@@ -66,6 +66,7 @@ export class File implements AdvancedType {
   name: string;
   data: string;
   mime: string;
+  objectId: string;
 
   constructor(name: string, data: string) {
     const ext = name.split('.').pop();

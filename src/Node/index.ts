@@ -1,4 +1,4 @@
-import { Platform, Response, Network } from '../platform';
+import { Platform, Response, Network } from '../core/Platform';
 import * as superagent from 'superagent';
 
 const network: Network = {
@@ -29,17 +29,19 @@ const network: Network = {
     }
   },
   async upload(
+    method: string,
     url: string,
-    name: string,
-    data: string,
+    files: { field: string; name: string; data: string }[],
     formData?: Record<string, string>
   ) {
-    const res = await superagent
-      .post(url)
-      .attach('file', Buffer.from(data, 'base64'), {
-        filename: name,
-      })
-      .field(formData);
+    const req = superagent(method, url);
+    files.forEach((file) => {
+      req.attach(file.field, Buffer.from(file.data, 'base64'), {
+        filename: file.name,
+        // contentType: ''
+      });
+    });
+    const res = await req.field(formData);
     return {
       status: res.status,
       headers: res.header,

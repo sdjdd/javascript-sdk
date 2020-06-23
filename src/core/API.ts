@@ -1,5 +1,7 @@
 import { AppInfo } from './app';
-import { Network } from '../../platform/Network';
+import { Network, getPlatform } from './Platform';
+
+const API_VERSION = '1.1';
 
 export interface RESTAPIError {
   code: number;
@@ -8,12 +10,14 @@ export interface RESTAPIError {
 
 export class API {
   session: string;
+  network: Network;
+  userAgent: string;
 
-  constructor(
-    public network: Network,
-    public appInfo: AppInfo,
-    public userAgent?: string
-  ) {}
+  constructor(public appInfo: AppInfo) {
+    const platform = getPlatform();
+    this.network = platform.network;
+    this.userAgent = platform.name;
+  }
 
   async lcRequest(
     method: string,
@@ -50,7 +54,7 @@ export class API {
     className: string,
     data: Record<string, unknown>
   ): Promise<string> {
-    const path = `/1.1/classes/${className}`;
+    const path = `/${API_VERSION}/classes/${className}`;
     const res = await this.lcRequest('POST', path, data);
     return res.objectId as string;
   }
@@ -59,7 +63,7 @@ export class API {
     className: string,
     objectId: string
   ): Promise<Record<string, unknown>> {
-    const path = `/1.1/classes/${className}/${objectId}`;
+    const path = `/${API_VERSION}/classes/${className}/${objectId}`;
     const res = await this.lcRequest('GET', path);
     return res;
   }
@@ -69,16 +73,16 @@ export class API {
     objectId: string,
     data: Record<string, unknown>
   ): Promise<void> {
-    const path = `/1.1/classes/${className}/${objectId}`;
+    const path = `/${API_VERSION}/classes/${className}/${objectId}`;
     await this.lcRequest('PUT', path, data);
   }
 
   async deleteObject(className: string, objectId: string): Promise<void> {
-    const path = `/1.1/classes/${className}/${objectId}`;
+    const path = `/${API_VERSION}/classes/${className}/${objectId}`;
     await this.lcRequest('DELETE', path);
   }
 
-  async requestFileToken(
+  async getFileTokens(
     key: string,
     name: string,
     options: {
@@ -86,7 +90,7 @@ export class API {
       keepFileName?: boolean;
     } = {}
   ): Promise<Record<string, string>> {
-    const path = `/1.1/fileTokens`;
+    const path = `/${API_VERSION}/fileTokens`;
     const res = await this.lcRequest('POST', path, {
       key,
       name,
@@ -96,13 +100,44 @@ export class API {
       metaData: undefined, // metaData is not necessary
     });
     return res as Record<string, string>;
+    /*
+    {
+      objectId: '5ef16e742056320008aeb45c',
+      createdAt: '2020-06-23T02:52:36.012Z',
+      token: 'w6ZYeC-arS2makzcotrVJGjQvpsCQeHcPseFRDzJ:yYJN52q2y6qQ6AlpWDW6defJ5iQ=:eyJpbnNlcnRPbmx5IjoxLCJzY29wZSI6Im9ZMmFxU3hoIiwibWltZUxpbWl0IjoiISIsImRlYWRsaW5lIjoxNTkyODg0MzU2fQ==',
+      url: 'http://xxxxxx.cn-n1.lcfile.com/54d52c30-a3bd-4862-af38-96ae8c6bf36a.txt',
+      mime_type: 'text/plain',
+      provider: 'qiniu',
+      upload_url: 'https://upload.qiniup.com',
+      bucket: 'oY2aqSxh',
+      key: '54d52c30-a3bd-4862-af38-96ae8c6bf36a.txt'
+    }
+    */
+  }
+
+  handleFileCallback(
+    token: string,
+    result = true
+  ): Promise<Record<string, unknown>> {
+    const path = `/${API_VERSION}/fileCallback`;
+    return this.lcRequest('POST', path, { token, result });
+  }
+
+  userSignUp(userInfo: {
+    username: string;
+    password: string;
+    email?: string;
+    mobilePhoneNumber?: string;
+  }): Promise<Record<string, unknown>> {
+    const path = `/${API_VERSION}/users`;
+    return this.lcRequest('POST', path, userInfo);
   }
 
   async userLogin(
     username: string,
     password: string
   ): Promise<Record<string, unknown>> {
-    const path = `/1.1/login`;
+    const path = `/${API_VERSION}/login`;
     const res = await this.lcRequest('POST', path, {
       username,
       password,

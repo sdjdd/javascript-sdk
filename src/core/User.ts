@@ -1,5 +1,7 @@
-import { ObjectReference } from '../storage';
-import { API } from '../app/API';
+import { ObjectReference } from './ObjectReference';
+import { API } from './API';
+
+export class Role extends ObjectReference {}
 
 export class User extends ObjectReference {
   sessionToken: string;

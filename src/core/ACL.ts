@@ -1,4 +1,4 @@
-import { User } from '../user/UserObject';
+import { User } from './User';
 
 export type ACLSubject = User | '*';
 export type ACLAction = 'read' | 'write';

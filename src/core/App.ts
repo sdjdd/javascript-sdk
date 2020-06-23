@@ -1,13 +1,11 @@
-import { Storage } from '../storage/Storage';
-import { Platform } from '../../platform';
+import { Storage } from './Storage';
+import { Platform } from './Platform';
 import { API } from './API';
-import { UserClassReference } from '../user/UserClass';
 
 export interface AppConfig {
   appId: string;
   appKey: string;
   serverURL: string;
-  platform: Platform;
   name?: string;
 }
 
@@ -30,16 +28,27 @@ export class App {
       serverURL: config.serverURL,
     };
     this.name = config.name || '[DEFAULT]';
-    this.api = new API(config.platform.network, this.info);
-    this.platform = config.platform;
+    this.api = new API(this.info);
+  }
+
+  get sessionToken(): string {
+    return this.api.session;
+  }
+  set sessionToken(sessionToken: string) {
+    this.api.session = sessionToken;
   }
 
   storage(): Storage {
     return new Storage(this.api);
   }
 
-  user(): UserClassReference {
-    return new UserClassReference(this.api);
+  signUp(userInfo: {
+    username: string;
+    password: string;
+    email?: string;
+    mobilePhoneNumber?: string;
+  }): Promise<Record<string, unknown>> {
+    return this.api.userSignUp(userInfo);
   }
 
   login(options: {
@@ -50,5 +59,9 @@ export class App {
       return this.api.userLogin(options.username, options.password);
     }
     throw new TypeError('invalid login options');
+  }
+
+  logout(): void {
+    delete this.api.session;
   }
 }

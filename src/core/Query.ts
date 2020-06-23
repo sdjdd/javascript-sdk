@@ -1,5 +1,5 @@
 import { LCObject } from './ObjectReference';
-import { API } from '../app/API';
+import { API } from './API';
 
 export type Condition = '==' | '>=' | '<=' | '!=';
 
