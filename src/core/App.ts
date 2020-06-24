@@ -1,6 +1,7 @@
 import { Storage } from './Storage';
 import { Platform } from './Platform';
 import { API } from './API';
+import { HTTPRequest } from './http';
 
 export interface AppConfig {
   appId: string;
@@ -20,6 +21,8 @@ export class App {
   info: AppInfo;
   platform: Platform;
   api: API;
+  storage: Storage;
+  requests: HTTPRequest[] = [];
 
   constructor(config: AppConfig) {
     this.info = {
@@ -29,6 +32,8 @@ export class App {
     };
     this.name = config.name || '[DEFAULT]';
     this.api = new API(this.info);
+    this.storage = new Storage(this.api);
+    this.storage.app = this;
   }
 
   get sessionToken(): string {
@@ -36,10 +41,6 @@ export class App {
   }
   set sessionToken(sessionToken: string) {
     this.api.session = sessionToken;
-  }
-
-  storage(): Storage {
-    return new Storage(this.api);
   }
 
   signUp(userInfo: {
@@ -63,5 +64,17 @@ export class App {
 
   logout(): void {
     delete this.api.session;
+  }
+
+  _setRequestHeader(request: HTTPRequest): void {
+    request.header['X-LC-UA'] = this.platform.name;
+    request.header['X-LC-Id'] = this.info.appId;
+    request.header['X-LC-Key'] = this.info.appKey;
+    request.header['Content-Type'] = 'application/json';
+  }
+
+  _pushRequest(request: HTTPRequest): void {
+    this._setRequestHeader(request);
+    this.requests.push(request);
   }
 }

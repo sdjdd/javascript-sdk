@@ -1,6 +1,7 @@
 import { AdvancedType } from './AdvancedType';
 import { v4 as uuid } from 'uuid';
 import { API } from './API';
+import { App } from './app';
 
 const RESERVED_KEYS = new Set(['objectId', 'createdAt', 'updatedAt']);
 function removeReservedKeys(obj: Record<string, unknown>) {
@@ -11,13 +12,15 @@ function removeReservedKeys(obj: Record<string, unknown>) {
   });
 }
 
-export interface LCObject {
-  objectId: string;
-  createdAt: string | Date;
-  updatedAt: string | Date;
+export interface ObjectAttributes {
+  readonly objectId?: string;
+  readonly createdAt?: string | Date;
+  readonly updatedAt?: string | Date;
+  [key: string]: unknown;
 }
 
 export class ObjectReference {
+  app: App;
   constructor(
     public api: API,
     public className: string,

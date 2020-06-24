@@ -4,14 +4,26 @@ import { API } from './API';
 import { FileUploader, QiniuFileProvider } from './FileUploader';
 import { File } from './ObjectReference';
 import { Response } from './Platform';
+import { UserClassReference } from './User';
+import { App } from './app';
 
 export class Storage {
   static Value = new Value();
 
-  constructor(public api: API) {}
+  User: UserClassReference;
+  app: App;
+
+  constructor(public api: API) {
+    this.User = new UserClassReference(api);
+  }
 
   Class(name: string): ClassReference {
-    return new ClassReference(name, this.api);
+    if (name == '_User') {
+      return this.User;
+    }
+    const cls = new ClassReference(name, this.api);
+    cls.app = this.app;
+    return cls;
   }
 
   getFileProvider(name: string): FileUploader {

@@ -3,7 +3,7 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 
 export default {
-  input: 'src/Node/index.ts',
+  input: 'src/core/index.ts',
   output: [
     {
       file: 'dist/Node/av.js',

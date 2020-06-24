@@ -15,7 +15,7 @@ const network: Network = {
       return {
         status: res.status,
         headers: res.header,
-        body: res.body || res.text,
+        body: Object.keys(res.body).length === 0 ? res.text : res.body,
       };
     } catch (err) {
       if (!err.status || !err.response) {

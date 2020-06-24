@@ -1,4 +1,3 @@
-import { LCObject } from './ObjectReference';
 import { API } from './API';
 
 export type Condition = '==' | '>=' | '<=' | '!=';

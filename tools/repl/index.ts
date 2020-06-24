@@ -1,5 +1,5 @@
-import Repl = require('repl');
-import path = require('path');
+import * as Repl from 'repl';
+import * as path from 'path';
 
 import * as context from './context';
 

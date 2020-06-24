@@ -1,4 +1,4 @@
-export * from './app';
-export * as Storage from './storage';
+export * from './App';
+export * as Storage from './Storage';
 export { setPlatform } from './Platform';
 export * from './ObjectReference';
