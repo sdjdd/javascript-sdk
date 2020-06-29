@@ -2,6 +2,8 @@ import { Storage } from './Storage';
 import { Platform } from './Platform';
 import { API } from './API';
 import { HTTPRequest } from './http';
+import * as utils from '../utils';
+import { Env } from './Env';
 
 export interface AppConfig {
   appId: string;
@@ -17,12 +19,16 @@ export interface AppInfo {
 }
 
 export class App {
+  static default: App;
+
   name: string;
   info: AppInfo;
   platform: Platform;
   api: API;
-  storage: Storage;
-  requests: HTTPRequest[] = [];
+
+  static init(config: AppConfig): void {
+    Env.setDefaultApp(new App(config));
+  }
 
   constructor(config: AppConfig) {
     this.info = {
@@ -32,8 +38,7 @@ export class App {
     };
     this.name = config.name || '[DEFAULT]';
     this.api = new API(this.info);
-    this.storage = new Storage(this.api);
-    this.storage.app = this;
+    this.platform = Env.getPlatform();
   }
 
   get sessionToken(): string {
@@ -66,15 +71,17 @@ export class App {
     delete this.api.session;
   }
 
-  _setRequestHeader(request: HTTPRequest): void {
-    request.header['X-LC-UA'] = this.platform.name;
-    request.header['X-LC-Id'] = this.info.appId;
-    request.header['X-LC-Key'] = this.info.appKey;
-    request.header['Content-Type'] = 'application/json';
-  }
+  async _doRequest(req: HTTPRequest): Promise<Record<string, unknown>> {
+    req.baseURL = this.info.serverURL;
+    req.header['X-LC-UA'] = this.platform.name;
+    req.header['X-LC-Id'] = this.info.appId;
+    req.header['X-LC-Key'] = this.info.appKey;
+    req.header['Content-Type'] = 'application/json';
 
-  _pushRequest(request: HTTPRequest): void {
-    this._setRequestHeader(request);
-    this.requests.push(request);
+    const res = await this.platform.network.request(req);
+    if (utils.httpStatusNotOK(res.status)) {
+      throw new Error(res.body as string);
+    }
+    return res.body as Record<string, unknown>;
   }
 }

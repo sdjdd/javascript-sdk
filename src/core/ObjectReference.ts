@@ -1,7 +1,7 @@
-import { AdvancedType } from './AdvancedType';
 import { v4 as uuid } from 'uuid';
-import { API } from './API';
 import { App } from './app';
+import { HTTPRequest } from './http';
+import { Pointer } from './Storage';
 
 const RESERVED_KEYS = new Set(['objectId', 'createdAt', 'updatedAt']);
 function removeReservedKeys(obj: Record<string, unknown>) {
@@ -20,12 +20,32 @@ export interface ObjectAttributes {
 }
 
 export class ObjectReference {
-  app: App;
   constructor(
-    public api: API,
+    public app: App,
     public className: string,
     public objectId?: string
   ) {}
+
+  // TODO: this implementation is bad
+  static parseAdvancedType(obj: Record<string, unknown>): void {
+    const items: unknown[] = [obj];
+    while (items.length > 0) {
+      const first = items.shift();
+      Object.entries(first).forEach(([key, value]) => {
+        if (value && value.constructor.name === 'Date') {
+          first[key] = { __type: 'Date', iso: value.toISOString() };
+          return;
+        }
+
+        if (
+          Array.isArray(value) ||
+          (typeof value === 'object' && value !== null)
+        ) {
+          items.push(value);
+        }
+      });
+    }
+  }
 
   toJSON(): Pointer {
     return new Pointer(this.className, this.objectId);
@@ -33,37 +53,44 @@ export class ObjectReference {
 
   async set(obj: Record<string, unknown>): Promise<void> {
     removeReservedKeys(obj);
-    if (this.objectId === undefined) {
-      this.objectId = await this.api.createObject(this.className, obj);
-    } else {
-      await this.api.updateObject(this.className, this.objectId, obj);
+    ObjectReference.parseAdvancedType(obj);
+    const req = new HTTPRequest({
+      method: 'POST',
+      path: `/1.1/classes/${this.className}`,
+      body: obj,
+    });
+    if (this.objectId) {
+      req.method = 'PUT';
+      req.path += '/' + this.objectId;
     }
+    const res = await this.app._doRequest(req);
+    this.objectId = res.objectId as string;
   }
 
   async delete(): Promise<void> {
     if (this.objectId === undefined) {
       return;
     }
-    await this.api.deleteObject(this.className, this.objectId);
+    const req = new HTTPRequest({
+      method: 'DELETE',
+      path: `/1.1/classes/${this.className}/${this.objectId}`,
+    });
+    await this.app._doRequest(req);
   }
 
-  async get(): Promise<unknown> {
-    const data = await this.api.getObject(this.className, this.objectId);
-    return data;
+  async get(): Promise<Record<string, unknown>> {
+    if (!this.objectId) {
+      throw new Error('Cannot get an object without objectId');
+    }
+    const req = new HTTPRequest({
+      method: 'GET',
+      path: `/1.1/classes/${this.className}/${this.objectId}`,
+    });
+    return this.app._doRequest(req);
   }
 }
 
-export class GeoPoint implements AdvancedType {
-  __type = 'GeoPoint';
-  constructor(public latitude: number, public longitude: number) {}
-}
-
-export class Pointer implements AdvancedType {
-  __type = 'Pointer';
-  constructor(public className: string, public objectId: string) {}
-}
-
-export class File implements AdvancedType {
+export class File {
   __type = 'File';
   key: string;
   name: string;

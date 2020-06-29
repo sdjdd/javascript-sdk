@@ -1,4 +1,4 @@
-import { API } from './API';
+import { App } from './app';
 
 export type Condition = '==' | '>=' | '<=' | '!=';
 
@@ -7,7 +7,7 @@ type AndCondition = Record<string, unknown>;
 export class Query {
   private _and: AndCondition[] = [];
 
-  constructor(public className: string, public api: API) {}
+  constructor(public className: string, public app: App) {}
 
   // async get(): Promise<LCObject[]> {
   //   let whereStr = '';

@@ -6,9 +6,7 @@ export class ClassReference extends Query {
   app: App;
 
   object(id?: string): ObjectReference {
-    const obj = new ObjectReference(this.api, this.className, id);
-    obj.app = this.app;
-    return obj;
+    return new ObjectReference(this.app, this.className, id);
   }
 
   async add(data: Record<string, unknown>): Promise<ObjectReference> {

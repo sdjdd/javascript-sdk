@@ -6,11 +6,11 @@ export default {
   input: 'src/core/index.ts',
   output: [
     {
-      file: 'dist/Node/av.js',
+      file: 'dist/core/av.js',
       format: 'cjs',
     },
     {
-      file: 'dist/Node/av.esm.js',
+      file: 'dist/core/av.esm.js',
       format: 'es',
     },
   ],

@@ -1,20 +1,21 @@
 import * as env from '../../env';
-import * as LC from '../../src/core';
+import { App, Storage, setPlatform } from '../../src/core';
 import { node } from '../../src/Node';
 
-export { env, LC };
+export { env };
 
-LC.setPlatform(node);
+setPlatform(node);
 
-export const app = new LC.App({
+App.init({
   name: 'REPL APP',
   appId: env.appId,
   appKey: env.appKey,
   serverURL: env.serverURL,
 });
 
-export const db = app.storage;
+export const db = new Storage();
 
 export const Test = db.Class('Test');
 export const Todo = db.Class('Todo');
 export { HTTPRequest } from '../../src/core/http';
+export { ObjectReference } from '../../src/core/ObjectReference';

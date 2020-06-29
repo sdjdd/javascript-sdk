@@ -1,16 +1,16 @@
-import { API } from './API';
 import { File } from './ObjectReference';
-import { Response } from './Platform';
+import { HTTPResponse } from './http';
+import { App } from './app';
 
 export abstract class FileUploader {
-  constructor(public api: API) {}
+  constructor(public app: App) {}
 
   abstract upload(
     file: File,
     url: string,
     key: string,
     token: string
-  ): Promise<Response>;
+  ): Promise<HTTPResponse>;
 }
 
 export class QiniuFileProvider extends FileUploader {
@@ -19,7 +19,7 @@ export class QiniuFileProvider extends FileUploader {
     url: string,
     key: string,
     token: string
-  ): Promise<Response> {
+  ): Promise<HTTPResponse> {
     const files = [
       {
         field: 'file',
@@ -32,6 +32,6 @@ export class QiniuFileProvider extends FileUploader {
       token,
       name: file.name,
     };
-    return this.api.network.upload('POST', url, files, formData);
+    return this.app.platform.network.upload('POST', url, files, formData);
   }
 }

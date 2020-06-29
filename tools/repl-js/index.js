@@ -1,7 +1,7 @@
-import * as Repl from 'repl';
-import * as path from 'path';
-
-import * as context from './context';
+const Repl = require('repl');
+const path = require('path');
+const LC = require('../../dist/core/av');
+const { node } = require('../../dist/Node');
 
 printUsage();
 
@@ -14,6 +14,10 @@ repl.setupHistory(historyPath, function (err) {
   }
 });
 
+LC.setPlatform(node);
+repl.context.LC = LC;
+
+const context = require('./context');
 Object.assign(repl.context, context);
 
 function printUsage() {

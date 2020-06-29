@@ -1,20 +1,16 @@
-import { Platform, Response, Network } from '../core/Platform';
-import * as superagent from 'superagent';
+import { Platform, Network } from '../core/Platform';
+import superagent from 'superagent';
+import { HTTPRequest, HTTPResponse } from '../core/http';
 
 const network: Network = {
-  async request(
-    method: string,
-    url: string,
-    headers: Record<string, string>,
-    data?: unknown
-  ): Promise<Response> {
+  async request(req: HTTPRequest): Promise<HTTPResponse> {
     try {
-      const res = await superagent(method, url)
-        .set(headers)
-        .send(data as string);
+      const res = await superagent(req.method, req.url)
+        .set(req.header)
+        .send(req.body as string);
       return {
         status: res.status,
-        headers: res.header,
+        header: res.header,
         body: Object.keys(res.body).length === 0 ? res.text : res.body,
       };
     } catch (err) {
@@ -23,7 +19,7 @@ const network: Network = {
       }
       return {
         status: err.status as number,
-        headers: err.response.headers as Record<string, string | string[]>,
+        header: err.response.headers as Record<string, string | string[]>,
         body: err.response.text,
       };
     }
@@ -44,7 +40,7 @@ const network: Network = {
     const res = await req.field(formData);
     return {
       status: res.status,
-      headers: res.header,
+      header: res.header,
       body: res.body || res.text,
     };
   },

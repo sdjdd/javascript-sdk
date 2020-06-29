@@ -1,5 +1,6 @@
 import { AppInfo } from './app';
-import { Network, getPlatform } from './Platform';
+import { Network } from './Platform';
+import { HTTPRequest } from './http';
 
 const API_VERSION = '1.1';
 
@@ -13,11 +14,7 @@ export class API {
   network: Network;
   userAgent: string;
 
-  constructor(public appInfo: AppInfo) {
-    const platform = getPlatform();
-    this.network = platform.network;
-    this.userAgent = platform.name;
-  }
+  constructor(public appInfo: AppInfo) {}
 
   async lcRequest(
     method: string,
@@ -34,12 +31,7 @@ export class API {
       headers['X-LC-Session'] = this.session;
     }
 
-    const res = await this.network.request(
-      method,
-      this.appInfo.serverURL + path,
-      headers,
-      data
-    );
+    const res = await this.network.request(new HTTPRequest());
     if (Math.floor(res.status / 100) !== 2) {
       throw new Error(res.body as string);
     }
