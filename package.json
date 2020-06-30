@@ -9,8 +9,9 @@
   },
   "scripts": {
     "clean": "rm -rf ./dist",
-    "build": "npm run clean && rollup -c",
-    "build:platform": "rollup -c platform.rollup.config.js",
+    "build": "npm run clean && npm run build:core",
+    "build:core": "rollup -c rollup/core.config.js",
+    "build:platform": "rollup -c rollup/node.config.js",
     "test": "mocha",
     "coverage": "nyc npm run test",
     "repl": "ts-node ./tools/repl",
