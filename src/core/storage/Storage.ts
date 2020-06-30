@@ -9,40 +9,7 @@ import { defaultApp } from '../global';
 
 export { ObjectReference } from './Object';
 
-export interface Operation {
-  __op: string;
-  [key: string]: unknown;
-}
-
-export class Value {
-  static delete(): Operation {
-    return { __op: 'Delete' };
-  }
-
-  static increment(amount = 1): Operation {
-    return { __op: 'Increment', amount };
-  }
-
-  static decrement(amount = 1): Operation {
-    return { __op: 'Decrement', amount };
-  }
-
-  static add(objects: unknown[]): Operation {
-    return { __op: 'Add', objects };
-  }
-
-  static addUnique(objects: unknown[]): Operation {
-    return { __op: 'AddUnique', objects };
-  }
-
-  static remove(objects: unknown[]): Operation {
-    return { __op: 'Remove', objects };
-  }
-}
-
 export class Storage {
-  static Value = Value;
-
   User: UserClassReference;
 
   constructor(public app: App) {}

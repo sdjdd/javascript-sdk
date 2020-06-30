@@ -1,15 +1,9 @@
 import * as env from '../../env';
-import {
-  init,
-  App,
-  Storage,
-  PlatformSupport,
-  ACL,
-  storage,
-} from '../../src/core';
+import { init, PlatformSupport } from '../../src/core';
 import { node } from '../../src/Node';
 
-export { env, App, Storage, ACL, storage };
+export { env };
+export { App, Storage, ACL, storage, Operation } from '../../src/core';
 
 PlatformSupport.setPlatform(node);
 
@@ -19,6 +13,3 @@ init({
   appKey: env.appKey,
   serverURL: env.serverURL,
 });
-
-export { HTTPRequest } from '../../src/core/http';
-export { ObjectReference } from '../../src/core/storage/ObjectReference';
