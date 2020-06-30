@@ -15,7 +15,7 @@ export class Storage {
 
   constructor(public app: App) {}
 
-  Class(name: string): ClassReference {
+  class(name: string): ClassReference {
     if (name == '_User') {
       return this.User;
     }

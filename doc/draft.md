@@ -40,7 +40,7 @@ const object = {
 };
 
 // 构建对象
-const Test = storage.Class('Test');
+const Test = storage.class('Test');
 const test = Test.add({
   testNumber: number,
   testString: string,
@@ -63,7 +63,7 @@ const test = Test.add({
 下面的代码构建了一个 className 为 `Todo` Class：
 
 ```js
-const Todo = storage.Class('Todo');
+const Todo = storage.class('Todo');
 ```
 
 <!-- TODO -->
@@ -76,7 +76,7 @@ const Todo = storage.Class('Todo');
 
 ```js
 // 声明 class
-const Todo = storage.Class('Todo');
+const Todo = storage.class('Todo');
 
 // 保存数据到云端
 Todo.add({
@@ -134,7 +134,7 @@ Todo.add({
 
 ```js
 storage
-  .Class('Todo')
+  .class('Todo')
   .object('582570f38ac247004f39c24b')
   .get()
   .then((data) => {
@@ -154,7 +154,7 @@ storage
 要更新一个对象，只需指定需要更新的属性名和属性值，然后调用 set 方法。例如：
 
 ```js
-storage.Class('Todo').object('582570f38ac247004f39c24b').set({
+storage.class('Todo').object('582570f38ac247004f39c24b').set({
   content: '这周周会改到周三下午三点。',
 });
 ```
@@ -199,7 +199,7 @@ const alarm3 = new Date('2018-04-30T07:30:00');
 
 const alarms = [alarm1, alarm2, alarm3];
 
-storage.Class('Todo').add({
+storage.class('Todo').add({
   alarms: Operation.addUnique(alarms);
 })
 ```
@@ -209,14 +209,14 @@ storage.Class('Todo').add({
 下面的代码从云端删除一个 `Todo` 对象；
 
 ```js
-const todo = storage.Class('Todo').object('582570f38ac247004f39c24b');
+const todo = storage.class('Todo').object('582570f38ac247004f39c24b');
 todo.delete();
 ```
 
 如果只需删除对象的一个属性，可以用 `delete` Operation：
 
 ```js
-const todo = storage.Class('Todo').object('582570f38ac247004f39c24b');
+const todo = storage.class('Todo').object('582570f38ac247004f39c24b');
 
 // priority 属性会被删除
 todo.set({
@@ -231,7 +231,7 @@ todo.set({
 可以在一次请求中包含多个构建、保存和删除对象的操作：
 
 ```js
-const Todo = storage.Class('Todo');
+const Todo = storage.class('Todo');
 
 const batch = storage.batch();
 
@@ -260,7 +260,7 @@ batch.commit();
 
 ```js
 // 创建 post
-const Post = storage.Class('Post');
+const Post = storage.class('Post');
 
 await Post.add({
   title: '饿了……',
@@ -268,7 +268,7 @@ await Post.add({
 });
 
 // 创建 comment
-const Comment = storage.Class('Comment');
+const Comment = storage.class('Comment');
 Comment.add({
   post: post, // 将 post 设为 comment 的一个属性值
   content: '当然是肯德基啦！',
@@ -278,7 +278,7 @@ Comment.add({
 云端存储时，会将被指向的对象用 `Pointer` 的形式存起来。你也可以用 `objectId` 来指向一个对象：
 
 ```js
-const post = storage.Class('Post').object('57328ca079bc44005c2472d0');
+const post = storage.class('Post').object('57328ca079bc44005c2472d0');
 comment.set({
   post: post,
 });
