@@ -235,7 +235,7 @@ todo.set({
 
 ### 批量操作
 
-可以在一次请求中包含多个构建、保存、删除和同步对象的操作：
+可以在一次请求中包含多个构建、保存和删除对象的操作：
 
 ```js
 const Todo = storage.Class('Todo');
@@ -285,7 +285,7 @@ comment.set({
 云端存储时，会将被指向的对象用 `Pointer` 的形式存起来。你也可以用 `objectId` 来指向一个对象：
 
 ```js
-const post = storage.Class('Post').object();
+const post = storage.Class('Post').object('57328ca079bc44005c2472d0');
 comment.set({
   post: post,
 });
