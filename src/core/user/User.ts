@@ -1,7 +1,7 @@
-import { ObjectReference, ObjectAttributes } from './ObjectReference';
-import { API } from './API';
-import { ClassReference } from './ClassReference';
-import { App } from './app';
+import { ObjectReference, ObjectAttributes } from '../storage/ObjectReference';
+import { API } from '../API';
+import { ClassReference } from '../storage/Class';
+import { App } from '../app';
 
 export interface UserAttributes extends ObjectAttributes {
   username: string;

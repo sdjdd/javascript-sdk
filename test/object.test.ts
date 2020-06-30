@@ -3,10 +3,14 @@ import { ObjectReference } from '../src/core';
 
 describe('ObjectReference', function () {
   describe('.parseAdvancedType', function () {
-    const obj = {
+    const obj: Record<string, unknown> = {
       date: new Date(),
     };
-    ObjectReference.parseAdvancedType(obj);
-    console.log(obj);
+    ObjectReference.encodeAdvancedType(obj);
+    const encoded = obj.date as {
+      __type: string;
+      iso: string;
+    };
+    encoded.__type.should.eql('Date');
   });
 });

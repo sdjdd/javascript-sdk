@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
-import { App } from './app';
-import { HTTPRequest } from './http';
+import { App } from '../app';
+import { HTTPRequest } from '../http';
 import { Pointer } from './Storage';
 
 const RESERVED_KEYS = new Set(['objectId', 'createdAt', 'updatedAt']);
@@ -13,9 +13,9 @@ function removeReservedKeys(obj: Record<string, unknown>) {
 }
 
 export interface ObjectAttributes {
-  readonly objectId?: string;
-  readonly createdAt?: string | Date;
-  readonly updatedAt?: string | Date;
+  objectId?: string;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
   [key: string]: unknown;
 }
 
@@ -27,7 +27,7 @@ export class ObjectReference {
   ) {}
 
   // TODO: this implementation is bad
-  static parseAdvancedType(obj: Record<string, unknown>): void {
+  static encodeAdvancedType(obj: Record<string, unknown>): void {
     const items: unknown[] = [obj];
     while (items.length > 0) {
       const first = items.shift();
@@ -47,46 +47,79 @@ export class ObjectReference {
     }
   }
 
+  static decodeAdvancedType(data: ObjectAttributes): void {
+    data.createdAt = new Date(data.createdAt);
+    data.updatedAt = new Date(data.updatedAt);
+
+    const items: unknown[] = [data];
+    while (items.length > 0) {
+      const item = items.shift();
+      Object.entries(item).forEach(([key, value]) => {
+        if (!value) return;
+        switch (value.__type) {
+          case 'Date': {
+            item[key] = new Date(value.iso);
+            return;
+          }
+        }
+        if (Array.isArray(value) || typeof value === 'object') {
+          items.push(value);
+        }
+      });
+    }
+  }
+
+  get classPath(): string {
+    if (this.className === '_User') {
+      return '/1.1/users';
+    }
+    return `/1.1/classes/${this.className}`;
+  }
+  get objectPath(): string {
+    if (this.objectId) {
+      return this.classPath + '/' + this.objectId;
+    }
+    return this.classPath;
+  }
+
   toJSON(): Pointer {
     return new Pointer(this.className, this.objectId);
   }
 
-  async set(obj: Record<string, unknown>): Promise<void> {
-    removeReservedKeys(obj);
-    ObjectReference.parseAdvancedType(obj);
+  async set(data: ObjectAttributes): Promise<void> {
+    removeReservedKeys(data);
+    ObjectReference.encodeAdvancedType(data);
     const req = new HTTPRequest({
-      method: 'POST',
-      path: `/1.1/classes/${this.className}`,
-      body: obj,
+      method: this.objectId ? 'PUT' : 'POST',
+      path: this.objectPath,
+      body: data,
     });
-    if (this.objectId) {
-      req.method = 'PUT';
-      req.path += '/' + this.objectId;
-    }
-    const res = await this.app._doRequest(req);
-    this.objectId = res.objectId as string;
+    const res: ObjectAttributes = await this.app._doRequest(req);
+    this.objectId = res.objectId;
   }
 
   async delete(): Promise<void> {
     if (this.objectId === undefined) {
-      return;
+      throw new Error('Cannot delete an object without objectId');
     }
     const req = new HTTPRequest({
       method: 'DELETE',
-      path: `/1.1/classes/${this.className}/${this.objectId}`,
+      path: this.objectPath,
     });
     await this.app._doRequest(req);
   }
 
-  async get(): Promise<Record<string, unknown>> {
+  async get(): Promise<ObjectAttributes> {
     if (!this.objectId) {
       throw new Error('Cannot get an object without objectId');
     }
     const req = new HTTPRequest({
       method: 'GET',
-      path: `/1.1/classes/${this.className}/${this.objectId}`,
+      path: this.objectPath,
     });
-    return this.app._doRequest(req);
+    const res = await this.app._doRequest(req);
+    ObjectReference.decodeAdvancedType(res);
+    return res;
   }
 }
 

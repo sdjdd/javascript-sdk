@@ -25,14 +25,13 @@ Available Commands:
 
 Available Classes:
 
-  LC.App
-  LC.Value
+  App
+  Storage
 
 Available Objects:
 
-  env - current environment
-  app - instance of AV.App with env
-  db  - instance of AV.Storage from app.storage()
+  env     - current environment
+  storage - instance of Storage with default App
 
 `);
 }

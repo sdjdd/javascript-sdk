@@ -1,6 +1,6 @@
 import { ObjectReference } from './ObjectReference';
 import { Query } from './Query';
-import { App } from './app';
+import { App } from '../app';
 
 export class ClassReference extends Query {
   app: App;

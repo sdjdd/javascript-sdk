@@ -1,6 +1,7 @@
-import { File } from './ObjectReference';
+import { File } from './storage/ObjectReference';
 import { HTTPResponse } from './http';
 import { App } from './app';
+import { PlatformSupport } from './Platform';
 
 export abstract class FileUploader {
   constructor(public app: App) {}
@@ -32,6 +33,11 @@ export class QiniuFileProvider extends FileUploader {
       token,
       name: file.name,
     };
-    return this.app.platform.network.upload('POST', url, files, formData);
+    return PlatformSupport.getPlatform().network.upload(
+      'POST',
+      url,
+      files,
+      formData
+    );
   }
 }

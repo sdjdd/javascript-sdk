@@ -1,11 +1,11 @@
-import { ClassReference } from './ClassReference';
-import { API } from './API';
-import { FileUploader, QiniuFileProvider } from './FileUploader';
+import { ClassReference } from './Class';
+import { API } from '../API';
+import { FileUploader, QiniuFileProvider } from '../FileUploader';
 import { File } from './ObjectReference';
-import { UserClassReference } from './User';
-import { App } from './app';
-import { HTTPResponse } from './http';
-import { Env } from './Env';
+import { UserClassReference } from '../user/User';
+import { App } from '../app';
+import { HTTPResponse } from '../http';
+import { defaultApp } from '../global';
 
 export { ObjectReference } from './ObjectReference';
 
@@ -41,22 +41,17 @@ export class Value {
 }
 
 export class Storage {
-  static Value = new Value();
+  static Value = Value;
 
-  app: App;
   User: UserClassReference;
 
-  constructor(app?: App) {
-    this.app = app ?? Env.getDefaultApp();
-  }
+  constructor(public app: App) {}
 
   Class(name: string): ClassReference {
     if (name == '_User') {
       return this.User;
     }
-    const cls = new ClassReference(name, this.app);
-    cls.app = this.app;
-    return cls;
+    return new ClassReference(name, this.app);
   }
 
   getFileProvider(name: string): FileUploader {
@@ -94,6 +89,8 @@ export class Storage {
   //   return res;
   // }
 }
+
+export const storage = new Storage(defaultApp);
 
 export class GeoPoint {
   __type = 'GeoPoint';

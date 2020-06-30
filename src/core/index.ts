@@ -1,11 +1,5 @@
-import { Env } from './Env';
-import { Platform } from './Platform';
-
 export * from './App';
-export * from './Storage';
+export * from './storage';
 export * from './Platform';
-export * from './ObjectReference';
-
-export function setPlatform(plat: Platform): void {
-  Env.setPlatform(plat);
-}
+export * from './storage/ObjectReference';
+export { init } from './global';

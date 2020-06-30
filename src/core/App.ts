@@ -1,9 +1,7 @@
-import { Storage } from './Storage';
-import { Platform } from './Platform';
-import { API } from './API';
+import { PlatformSupport } from './Platform';
 import { HTTPRequest } from './http';
-import * as utils from '../utils';
-import { Env } from './Env';
+import * as utils from './utils';
+import { defaultApp } from './global';
 
 export interface AppConfig {
   appId: string;
@@ -19,66 +17,42 @@ export interface AppInfo {
 }
 
 export class App {
-  static default: App;
-
   name: string;
   info: AppInfo;
-  platform: Platform;
-  api: API;
 
-  static init(config: AppConfig): void {
-    Env.setDefaultApp(new App(config));
+  static get default(): App {
+    return defaultApp;
   }
 
-  constructor(config: AppConfig) {
+  constructor(config?: AppConfig) {
     this.info = {
-      appId: config.appId,
-      appKey: config.appKey,
-      serverURL: config.serverURL,
+      appId: config?.appId,
+      appKey: config?.appKey,
+      serverURL: config?.serverURL,
     };
     this.name = config.name || '[DEFAULT]';
-    this.api = new API(this.info);
-    this.platform = Env.getPlatform();
   }
 
-  get sessionToken(): string {
-    return this.api.session;
-  }
-  set sessionToken(sessionToken: string) {
-    this.api.session = sessionToken;
-  }
-
-  signUp(userInfo: {
-    username: string;
-    password: string;
-    email?: string;
-    mobilePhoneNumber?: string;
-  }): Promise<Record<string, unknown>> {
-    return this.api.userSignUp(userInfo);
-  }
-
-  login(options: {
-    username?: string;
-    password?: string;
-  }): Promise<Record<string, unknown>> {
-    if (options.username !== undefined && options.password !== undefined) {
-      return this.api.userLogin(options.username, options.password);
+  get initialized(): boolean {
+    if (this.info.appId && this.info.appKey) {
+      return true;
     }
-    throw new TypeError('invalid login options');
-  }
-
-  logout(): void {
-    delete this.api.session;
+    return false;
   }
 
   async _doRequest(req: HTTPRequest): Promise<Record<string, unknown>> {
+    if (!this.initialized) {
+      throw new Error('app is not initialized');
+    }
+
+    const platform = PlatformSupport.getPlatform();
     req.baseURL = this.info.serverURL;
-    req.header['X-LC-UA'] = this.platform.name;
+    req.header['X-LC-UA'] = platform.name;
     req.header['X-LC-Id'] = this.info.appId;
     req.header['X-LC-Key'] = this.info.appKey;
     req.header['Content-Type'] = 'application/json';
 
-    const res = await this.platform.network.request(req);
+    const res = await platform.network.request(req);
     if (utils.httpStatusNotOK(res.status)) {
       throw new Error(res.body as string);
     }
