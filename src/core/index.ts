@@ -3,3 +3,4 @@ export * from './storage';
 export * from './Platform';
 export * from './storage/Object';
 export { init } from './global';
+export * from '../core/user/User';

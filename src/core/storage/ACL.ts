@@ -1,11 +1,18 @@
-export type ACLSubject = string | '*';
+import { User } from '../user/User';
+
+export type ACLSubject = User | string | '*';
 export type ACLAction = 'read' | 'write';
 
 export class ACL {
   private _data: Record<string, { read?: boolean; write?: boolean }> = {};
 
   allow(subject: ACLSubject, action: 'read' | 'write'): this {
-    const key: string = subject;
+    let key: string;
+    if (subject instanceof User) {
+      key = subject.objectId;
+    } else {
+      key = subject;
+    }
 
     if (this._data[key] === undefined) {
       this._data[key] = {};
@@ -20,7 +27,12 @@ export class ACL {
   }
 
   deny(subject: ACLSubject, action: 'read' | 'write'): this {
-    const key: string = subject;
+    let key: string;
+    if (subject instanceof User) {
+      key = subject.objectId;
+    } else {
+      key = subject;
+    }
 
     if (this._data[key] === undefined) {
       this._data[key] = {};
@@ -35,7 +47,13 @@ export class ACL {
   }
 
   can(subject: ACLSubject, action: ACLAction): boolean {
-    const key: string = subject;
+    let key: string;
+    if (subject instanceof User) {
+      key = subject.objectId;
+    } else {
+      key = subject;
+    }
+
     const actions = this._data[key];
 
     if (actions === undefined) {

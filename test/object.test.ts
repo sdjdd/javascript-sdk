@@ -6,8 +6,8 @@ describe('ObjectReference', function () {
   describe('.set', function () {
     it('should remove reserved keys', function () {
       const app = new TestApp();
-      const o = new ObjectReference(app, 'Test');
-      o.set({
+      const o = new ObjectReference(app, 'Test', 'id');
+      o.update({
         objectId: '-',
         createdAt: '-',
         updatedAt: '-',
@@ -20,14 +20,14 @@ describe('ObjectReference', function () {
 
     it('should submit basic types', function () {
       const app = new TestApp();
-      const o = new ObjectReference(app, 'Test');
+      const o = new ObjectReference(app, 'Test', 'id');
 
       const string = 'string';
       const number = 123;
       const boolean = true;
       const array = [1, 2, 3, 4, 5];
       const object = { key: 'value' };
-      o.set({ string, number, boolean, array, object });
+      o.update({ string, number, boolean, array, object });
 
       const data = app.requests.pop().body as Record<string, unknown>;
       data.string.should.eql(string);

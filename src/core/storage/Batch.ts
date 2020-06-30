@@ -45,7 +45,7 @@ export class Batch {
     const ret = new Array<Promise<void>>(requests.length);
     const promiseHandlers = new Array<{
       resolve: (value?: void | PromiseLike<void>) => void;
-      reject: (reason?: any) => void;
+      reject: (reason?: unknown) => void;
     }>(requests.length);
     for (let i = 0; i < ret.length; i++) {
       ret[i] = new Promise(

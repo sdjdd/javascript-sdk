@@ -60,12 +60,10 @@ const test = Test.add({
 
 ### 构建对象
 
-下面的代码构建了一个 class 为 `Todo` 的 `LCObject`：
+下面的代码构建了一个 className 为 `Todo` Class：
 
 ```js
 const Todo = storage.Class('Todo');
-
-const todo = Todo.object();
 ```
 
 <!-- TODO -->
@@ -80,15 +78,11 @@ const todo = Todo.object();
 // 声明 class
 const Todo = storage.Class('Todo');
 
-// 构建对象
-const todo = Todo.object();
-
 // 保存数据到云端
-todo
-  .set({
-    title: '马拉松报名',
-    priority: 2,
-  })
+Todo.add({
+  title: '马拉松报名',
+  priority: 2,
+})
   .then(() => {
     console.log(`保存成功, objectId: ${todo.objectId}`);
   })
@@ -205,8 +199,7 @@ const alarm3 = new Date('2018-04-30T07:30:00');
 
 const alarms = [alarm1, alarm2, alarm3];
 
-const todo = storage.Class('Todo').object();
-todo.set({
+storage.Class('Todo').add({
   alarms: Operation.addUnique(alarms);
 })
 ```
@@ -267,16 +260,16 @@ batch.commit();
 
 ```js
 // 创建 post
-const post = storage.Class('Post').object();
+const Post = storage.Class('Post');
 
-await post.set({
+await Post.add({
   title: '饿了……',
   content: '中午去哪吃呢？',
 });
 
 // 创建 comment
-const comment = storage.Class('Comment').object();
-comment.set({
+const Comment = storage.Class('Comment');
+Comment.add({
   post: post, // 将 post 设为 comment 的一个属性值
   content: '当然是肯德基啦！',
 });

@@ -23,7 +23,7 @@ export class ObjectReference {
   constructor(
     public app: App,
     public className: string,
-    public objectId?: string
+    public objectId: string
   ) {}
 
   // TODO: this implementation is bad
@@ -100,11 +100,11 @@ export class ObjectReference {
     });
   }
 
-  async set(data: ObjectAttributes): Promise<void> {
+  async update(data: ObjectAttributes): Promise<void> {
     removeReservedKeys(data);
     ObjectReference.encodeAdvancedType(data);
     const req = new HTTPRequest({
-      method: this.objectId ? 'PUT' : 'POST',
+      method: 'PUT',
       path: this.objectPath,
       body: data,
     });

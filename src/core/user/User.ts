@@ -1,5 +1,4 @@
 import { ObjectReference, ObjectAttributes } from '../storage/Object';
-import { API } from '../API';
 import { ClassReference } from '../storage/Class';
 import { App } from '../app';
 
@@ -23,10 +22,10 @@ export class UserClassReference extends ClassReference {
   // }
 }
 
-// export class User extends ObjectReference {
-//   sessionToken: string;
+export class User extends ObjectReference {
+  sessionToken: string;
 
-//   constructor(api: API, objectId: string) {
-//     super(api, '_User', objectId);
-//   }
-// }
+  constructor(app: App, objectId: string) {
+    super(app, '_User', objectId);
+  }
+}
