@@ -30,7 +30,7 @@ export class App {
       appKey: config?.appKey,
       serverURL: config?.serverURL,
     };
-    this.name = config.name || '[DEFAULT]';
+    this.name = config?.name || '[DEFAULT]';
   }
 
   get initialized(): boolean {
@@ -40,7 +40,7 @@ export class App {
     return false;
   }
 
-  async _doRequest(req: HTTPRequest): Promise<Record<string, unknown>> {
+  async _doRequest(req: HTTPRequest): Promise<unknown> {
     if (!this.initialized) {
       throw new Error('app is not initialized');
     }
@@ -56,6 +56,6 @@ export class App {
     if (utils.httpStatusNotOK(res.status)) {
       throw new Error(res.body as string);
     }
-    return res.body as Record<string, unknown>;
+    return res.body;
   }
 }

@@ -6,6 +6,7 @@ import { UserClassReference } from '../user/User';
 import { App } from '../app';
 import { HTTPResponse } from '../http';
 import { defaultApp } from '../global';
+import { Batch } from './Batch';
 
 export { ObjectReference } from './Object';
 
@@ -19,6 +20,10 @@ export class Storage {
       return this.User;
     }
     return new ClassReference(name, this.app);
+  }
+
+  batch(): Batch {
+    return new Batch(this.app);
   }
 
   getFileProvider(name: string): FileUploader {

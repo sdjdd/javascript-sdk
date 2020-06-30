@@ -48,8 +48,12 @@ export class ObjectReference {
   }
 
   static decodeAdvancedType(data: ObjectAttributes): void {
-    data.createdAt = new Date(data.createdAt);
-    data.updatedAt = new Date(data.updatedAt);
+    if (data.createdAt) {
+      data.createdAt = new Date(data.createdAt);
+    }
+    if (data.updatedAt) {
+      data.updatedAt = new Date(data.updatedAt);
+    }
 
     const items: unknown[] = [data];
     while (items.length > 0) {
@@ -86,6 +90,16 @@ export class ObjectReference {
     return new Pointer(this.className, this.objectId);
   }
 
+  _makeSetRequest(data: ObjectAttributes): HTTPRequest {
+    removeReservedKeys(data);
+    ObjectReference.encodeAdvancedType(data);
+    return new HTTPRequest({
+      method: this.objectId ? 'PUT' : 'POST',
+      path: this.objectPath,
+      body: data,
+    });
+  }
+
   async set(data: ObjectAttributes): Promise<void> {
     removeReservedKeys(data);
     ObjectReference.encodeAdvancedType(data);
@@ -94,7 +108,7 @@ export class ObjectReference {
       path: this.objectPath,
       body: data,
     });
-    const res: ObjectAttributes = await this.app._doRequest(req);
+    const res = (await this.app._doRequest(req)) as ObjectAttributes;
     this.objectId = res.objectId;
   }
 
@@ -117,7 +131,7 @@ export class ObjectReference {
       method: 'GET',
       path: this.objectPath,
     });
-    const res = await this.app._doRequest(req);
+    const res = (await this.app._doRequest(req)) as ObjectAttributes;
     ObjectReference.decodeAdvancedType(res);
     return res;
   }
