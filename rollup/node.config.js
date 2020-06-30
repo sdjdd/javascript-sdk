@@ -8,11 +8,11 @@ export default {
   input: 'src/Node/index.ts',
   output: [
     {
-      file: 'dist/Node/index.js',
+      file: 'dist/node/index.js',
       format: 'cjs',
     },
     {
-      file: 'dist/Node/index.esm.js',
+      file: 'dist/node/index.esm.js',
       format: 'es',
     },
   ],
