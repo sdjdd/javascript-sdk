@@ -1,4 +1,4 @@
-import { ObjectReference, ObjectAttributes } from '../storage/ObjectReference';
+import { ObjectReference, ObjectAttributes } from '../storage/Object';
 import { API } from '../API';
 import { ClassReference } from '../storage/Class';
 import { App } from '../app';

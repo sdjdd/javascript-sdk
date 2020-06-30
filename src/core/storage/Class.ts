@@ -1,4 +1,4 @@
-import { ObjectReference } from './ObjectReference';
+import { ObjectReference } from './Object';
 import { Query } from './Query';
 import { App } from '../app';
 

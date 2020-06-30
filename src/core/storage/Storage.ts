@@ -1,13 +1,13 @@
 import { ClassReference } from './Class';
 import { API } from '../API';
 import { FileUploader, QiniuFileProvider } from '../FileUploader';
-import { File } from './ObjectReference';
+import { File } from './Object';
 import { UserClassReference } from '../user/User';
 import { App } from '../app';
 import { HTTPResponse } from '../http';
 import { defaultApp } from '../global';
 
-export { ObjectReference } from './ObjectReference';
+export { ObjectReference } from './Object';
 
 export interface Operation {
   __op: string;

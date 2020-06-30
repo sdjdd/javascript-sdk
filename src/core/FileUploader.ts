@@ -1,4 +1,4 @@
-import { File } from './storage/ObjectReference';
+import { File } from './storage/Object';
 import { HTTPResponse } from './http';
 import { App } from './app';
 import { PlatformSupport } from './Platform';
