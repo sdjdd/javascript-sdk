@@ -1,22 +1,41 @@
 import { ObjectReference, ObjectAttributes } from './Object';
 import { Query } from './Query';
 import { App } from '../app';
-import { HTTPRequest } from '../http';
+import { PlatformSupport } from '../Platform';
+import { checkUluruResponse } from '../utils';
 
-export class ClassReference extends Query {
+export interface ClassAddObjectOption {
+  fetch?: boolean;
+}
+
+export class Class extends Query {
   app: App;
 
   object(id: string): ObjectReference {
     return new ObjectReference(this.app, this.className, id);
   }
 
-  async add(data: Record<string, unknown>): Promise<ObjectReference> {
-    const req = new HTTPRequest({
-      method: 'POST',
-      path: '/1.1/classes/' + this.className,
-      body: data,
-    });
-    const res = (await this.app._doRequest(req)) as ObjectAttributes;
-    return this.object(res.objectId);
+  async add(
+    data: Record<string, unknown>,
+    option?: ClassAddObjectOption
+  ): Promise<ObjectReference> {
+    const req = this.app._makeBaseRequest(
+      'POST',
+      '/1.1/classes/' + this.className
+    );
+    req.body = data;
+    if (option?.fetch) {
+      req.query = { fetchWhenSave: 'true' };
+    }
+
+    const platform = PlatformSupport.getPlatform();
+    const res = await platform.network.request(req);
+    checkUluruResponse(res);
+
+    const attr = res.body as ObjectAttributes;
+    const obj = this.object(attr.objectId);
+    obj.data = attr;
+    ObjectReference.decodeAdvancedType(this.app, obj.data);
+    return obj;
   }
 }

@@ -1,5 +1,5 @@
 import { ObjectReference, ObjectAttributes } from '../storage/Object';
-import { ClassReference } from '../storage/Class';
+import { Class } from '../storage/Class';
 import { App } from '../app';
 
 export interface UserAttributes extends ObjectAttributes {
@@ -11,7 +11,7 @@ export interface UserAttributes extends ObjectAttributes {
   readonly mobilePhoneNumberVerified?: boolean;
 }
 
-export class UserClassReference extends ClassReference {
+export class UserClassReference extends Class {
   constructor(app: App) {
     super('_User', app);
   }

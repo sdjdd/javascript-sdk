@@ -58,4 +58,19 @@ export class App {
     }
     return res.body;
   }
+
+  _makeBaseRequest(method: string, path: string): HTTPRequest {
+    const platform = PlatformSupport.getPlatform();
+    return {
+      method,
+      path,
+      baseURL: this.info.serverURL,
+      header: {
+        'X-LC-UA': platform.name,
+        'X-LC-Id': this.info.appId,
+        'X-LC-Key': this.info.appKey,
+        'Content-Type': 'application/json',
+      },
+    };
+  }
 }

@@ -1,65 +1,63 @@
 import { User } from '../user/User';
 
-export type ACLSubject = User | string | '*';
+export type ACLSubject = '*' | string;
 export type ACLAction = 'read' | 'write';
 
+export interface ACLPrivilege {
+  read?: boolean;
+  write?: boolean;
+}
+
 export class ACL {
-  private _data: Record<string, { read?: boolean; write?: boolean }> = {};
+  static from(data: Record<string, ACLPrivilege>): ACL {
+    const acl = new ACL();
+    Object.entries(data).forEach(([subject, privilege]) => {
+      if (privilege.read) {
+        acl.allow(subject, 'read');
+      } else {
+        acl.deny(subject, 'read');
+      }
+      if (privilege.write) {
+        acl.allow(subject, 'write');
+      } else {
+        acl.deny(subject, 'write');
+      }
+    });
+    return acl;
+  }
 
-  allow(subject: ACLSubject, action: 'read' | 'write'): this {
-    let key: string;
-    if (subject instanceof User) {
-      key = subject.objectId;
-    } else {
-      key = subject;
-    }
+  private _data: Record<string, ACLPrivilege> = {};
 
-    if (this._data[key] === undefined) {
-      this._data[key] = {};
+  private static _subjectToId(subject: ACLSubject): string {
+    return subject;
+    // if (subject instanceof User) {
+    //   return subject.objectId;
+    // } else {
+    //   return subject;
+    // }
+  }
+
+  allow(subject: ACLSubject, action: ACLAction): this {
+    const id = ACL._subjectToId(subject);
+    if (this._data[id] === undefined) {
+      this._data[id] = {};
     }
-    if (action === 'read') {
-      this._data[key].read = true;
-    }
-    if (action === 'write') {
-      this._data[key].write = true;
-    }
+    this._data[id][action] = true;
     return this;
   }
 
-  deny(subject: ACLSubject, action: 'read' | 'write'): this {
-    let key: string;
-    if (subject instanceof User) {
-      key = subject.objectId;
-    } else {
-      key = subject;
+  deny(subject: ACLSubject, action: ACLAction): this {
+    const id = ACL._subjectToId(subject);
+    if (this._data[id] === undefined) {
+      this._data[id] = {};
     }
-
-    if (this._data[key] === undefined) {
-      this._data[key] = {};
-    }
-    if (action === 'read') {
-      this._data[key].read = false;
-    }
-    if (action === 'write') {
-      this._data[key].write = false;
-    }
+    this._data[id][action] = false;
     return this;
   }
 
   can(subject: ACLSubject, action: ACLAction): boolean {
-    let key: string;
-    if (subject instanceof User) {
-      key = subject.objectId;
-    } else {
-      key = subject;
-    }
-
-    const actions = this._data[key];
-
-    if (actions === undefined) {
-      return false;
-    }
-    return actions[action] !== undefined && actions[action];
+    const id = ACL._subjectToId(subject);
+    return this._data[id] && this._data[id][action];
   }
 
   toJSON(): unknown {

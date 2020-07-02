@@ -1,11 +1,11 @@
 import { Platform, Network } from '../core/Platform';
 import superagent from 'superagent';
-import { HTTPRequest, HTTPResponse } from '../core/http';
+import { HTTPRequest, HTTPResponse, parseHTTPRequestURL } from '../core/http';
 
 const network: Network = {
   async request(req: HTTPRequest): Promise<HTTPResponse> {
     try {
-      const res = await superagent(req.method, req.url)
+      const res = await superagent(req.method, parseHTTPRequestURL(req))
         .set(req.header)
         .send(req.body as string);
       return {

@@ -1,7 +1,9 @@
 import { v4 as uuid } from 'uuid';
 import { App } from '../app';
-import { HTTPRequest } from '../http';
 import { Pointer } from './Storage';
+import { isDate, checkUluruResponse } from '../utils';
+import { ACL } from './ACL';
+import { PlatformSupport } from '../Platform';
 
 const RESERVED_KEYS = new Set(['objectId', 'createdAt', 'updatedAt']);
 function removeReservedKeys(obj: Record<string, unknown>) {
@@ -19,35 +21,41 @@ export interface ObjectAttributes {
   [key: string]: unknown;
 }
 
+export interface ObjectGetOption {
+  include?: string[];
+}
+
 export class ObjectReference {
+  data?: ObjectAttributes;
+
   constructor(
     public app: App,
     public className: string,
     public objectId: string
   ) {}
 
-  // TODO: this implementation is bad
+  // TODO: rafactor
   static encodeAdvancedType(obj: Record<string, unknown>): void {
     const items: unknown[] = [obj];
     while (items.length > 0) {
-      const first = items.shift();
-      Object.entries(first).forEach(([key, value]) => {
-        if (value && value.constructor.name === 'Date') {
-          first[key] = { __type: 'Date', iso: value.toISOString() };
+      const item = items.shift();
+      Object.entries(item).forEach(([key, value]) => {
+        if (!value) return;
+
+        if (isDate(value)) {
+          item[key] = { __type: 'Date', iso: value.toISOString() };
           return;
         }
 
-        if (
-          Array.isArray(value) ||
-          (typeof value === 'object' && value !== null)
-        ) {
+        if (typeof value === 'object') {
           items.push(value);
         }
       });
     }
   }
 
-  static decodeAdvancedType(data: ObjectAttributes): void {
+  // TODO: rafactor
+  static decodeAdvancedType(app: App, data: ObjectAttributes): void {
     if (data.createdAt) {
       data.createdAt = new Date(data.createdAt);
     }
@@ -60,80 +68,98 @@ export class ObjectReference {
       const item = items.shift();
       Object.entries(item).forEach(([key, value]) => {
         if (!value) return;
+        switch (key) {
+          case 'ACL':
+            item[key] = ACL.from(value);
+            return;
+        }
         switch (value.__type) {
-          case 'Date': {
+          case 'Date':
             item[key] = new Date(value.iso);
+            return;
+
+          case 'Pointer': {
+            const obj = new ObjectReference(
+              app,
+              value.className,
+              value.objectId
+            );
+            delete value.__type;
+            delete value.className;
+            delete value.objectId;
+            if (Object.keys(value).length > 0) {
+              obj.data = value;
+              items.push(obj.data);
+            }
+            item[key] = obj;
             return;
           }
         }
-        if (Array.isArray(value) || typeof value === 'object') {
+        if (typeof value === 'object') {
           items.push(value);
         }
       });
     }
   }
 
-  get classPath(): string {
-    if (this.className === '_User') {
-      return '/1.1/users';
-    }
-    return `/1.1/classes/${this.className}`;
-  }
-  get objectPath(): string {
-    if (this.objectId) {
-      return this.classPath + '/' + this.objectId;
-    }
-    return this.classPath;
-  }
-
   toJSON(): Pointer {
     return new Pointer(this.className, this.objectId);
   }
 
-  _makeSetRequest(data: ObjectAttributes): HTTPRequest {
+  async update(
+    data: ObjectAttributes,
+    option: ObjectGetOption
+  ): Promise<ObjectAttributes> {
     removeReservedKeys(data);
     ObjectReference.encodeAdvancedType(data);
-    return new HTTPRequest({
-      method: this.objectId ? 'PUT' : 'POST',
-      path: this.objectPath,
-      body: data,
-    });
-  }
+    const req = this.app._makeBaseRequest(
+      'PUT',
+      `/1.1/classes/${this.className}/${this.objectId}`
+    );
+    req.body = data;
+    if (option?.include) {
+      req.query = { include: option.include.join(',') };
+    }
 
-  async update(data: ObjectAttributes): Promise<void> {
-    removeReservedKeys(data);
-    ObjectReference.encodeAdvancedType(data);
-    const req = new HTTPRequest({
-      method: 'PUT',
-      path: this.objectPath,
-      body: data,
-    });
-    const res = (await this.app._doRequest(req)) as ObjectAttributes;
-    this.objectId = res.objectId;
+    const platform = PlatformSupport.getPlatform();
+    const res = await platform.network.request(req);
+    checkUluruResponse(res);
+
+    return res.body as ObjectAttributes;
   }
 
   async delete(): Promise<void> {
     if (this.objectId === undefined) {
       throw new Error('Cannot delete an object without objectId');
     }
-    const req = new HTTPRequest({
-      method: 'DELETE',
-      path: this.objectPath,
-    });
-    await this.app._doRequest(req);
+    const req = this.app._makeBaseRequest(
+      'DELETE',
+      `/1.1/classes/${this.className}/${this.objectId}`
+    );
+    const platform = PlatformSupport.getPlatform();
+    const res = await platform.network.request(req);
+    checkUluruResponse(res);
   }
 
-  async get(): Promise<ObjectAttributes> {
+  async get(option?: ObjectGetOption): Promise<ObjectAttributes> {
     if (!this.objectId) {
       throw new Error('Cannot get an object without objectId');
     }
-    const req = new HTTPRequest({
-      method: 'GET',
-      path: this.objectPath,
-    });
-    const res = (await this.app._doRequest(req)) as ObjectAttributes;
-    ObjectReference.decodeAdvancedType(res);
-    return res;
+    const req = this.app._makeBaseRequest(
+      'GET',
+      `/1.1/classes/${this.className}/${this.objectId}`
+    );
+    if (option?.include) {
+      req.query = { include: option.include.join(',') };
+    }
+
+    const platform = PlatformSupport.getPlatform();
+    const res = await platform.network.request(req);
+    checkUluruResponse(res);
+
+    const attr = res.body as ObjectAttributes;
+    ObjectReference.decodeAdvancedType(this.app, attr);
+    return attr;
   }
 }
 

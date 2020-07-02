@@ -3,7 +3,15 @@ import { init, PlatformSupport } from '../../src/core';
 import { node } from '../../src/Node';
 
 export { env };
-export { App, Storage, ACL, storage, Operation, User } from '../../src/core';
+export {
+  App,
+  Storage,
+  ACL,
+  storage,
+  Operation,
+  User,
+  Query,
+} from '../../src/core';
 
 PlatformSupport.setPlatform(node);
 

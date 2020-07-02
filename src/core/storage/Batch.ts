@@ -23,8 +23,8 @@ export class Batch {
   constructor(public app: App) {}
 
   set(obj: ObjectReference, data: ObjectAttributes): this {
-    const req = obj._makeSetRequest(data);
-    this._requests.push(req);
+    // const req = obj._makeSetRequest(data);
+    // this._requests.push(req);
     return this;
   }
 
@@ -36,11 +36,8 @@ export class Batch {
     }));
     this._requests = [];
 
-    const req = new HTTPRequest({
-      method: 'POST',
-      path: '/1.1/batch',
-      body: { requests },
-    });
+    const req = this.app._makeBaseRequest('POST', '/1.1/batch');
+    req.body = { requests };
 
     const ret = new Array<Promise<void>>(requests.length);
     const promiseHandlers = new Array<{

@@ -1,4 +1,4 @@
-import { ClassReference } from './Class';
+import { Class } from './Class';
 import { API } from '../API';
 import { FileUploader, QiniuFileProvider } from '../FileUploader';
 import { File } from './Object';
@@ -8,18 +8,16 @@ import { HTTPResponse } from '../http';
 import { defaultApp } from '../global';
 import { Batch } from './Batch';
 
-export { ObjectReference } from './Object';
-
 export class Storage {
   User: UserClassReference;
 
   constructor(public app: App) {}
 
-  class(name: string): ClassReference {
+  class(name: string): Class {
     if (name == '_User') {
       return this.User;
     }
-    return new ClassReference(name, this.app);
+    return new Class(name, this.app);
   }
 
   batch(): Batch {
