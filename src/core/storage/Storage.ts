@@ -1,5 +1,4 @@
 import { Class } from './Class';
-import { API } from '../API';
 import { FileUploader, QiniuFileProvider } from '../FileUploader';
 import { File, LCGeoPoint } from './Object';
 import { UserClassReference } from '../user/User';
