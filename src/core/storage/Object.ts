@@ -1,9 +1,8 @@
 import { v4 as uuid } from 'uuid';
 import { App } from '../app';
-import { Pointer } from './Storage';
 import { isDate, checkUluruResponse } from '../utils';
 import { ACL } from './ACL';
-import { PlatformSupport } from '../Platform';
+import { PlatformSupport, Platform } from '../Platform';
 
 const RESERVED_KEYS = new Set(['objectId', 'createdAt', 'updatedAt']);
 function removeReservedKeys(obj: Record<string, unknown>) {
@@ -12,6 +11,23 @@ function removeReservedKeys(obj: Record<string, unknown>) {
       delete obj[key];
     }
   });
+}
+
+export interface LCDate {
+  __type: 'Date';
+  iso: string;
+}
+
+export interface LCPointer {
+  __type: 'Pointer';
+  className: string;
+  objectId: string;
+}
+
+export interface LCGeoPoint {
+  __type: 'GeoPoint';
+  latitude: number;
+  longitude: number;
 }
 
 export interface ObjectAttributes {
@@ -26,13 +42,10 @@ export interface ObjectGetOption {
 }
 
 export class ObjectReference {
+  app: App;
+  className: string;
+  objectId: string;
   data?: ObjectAttributes;
-
-  constructor(
-    public app: App,
-    public className: string,
-    public objectId: string
-  ) {}
 
   // TODO: rafactor
   static encodeAdvancedType(obj: Record<string, unknown>): void {
@@ -41,12 +54,14 @@ export class ObjectReference {
       const item = items.shift();
       Object.entries(item).forEach(([key, value]) => {
         if (!value) return;
-
+        if (value instanceof ObjectReference) {
+          item[key] = value.toJSON();
+          return;
+        }
         if (isDate(value)) {
           item[key] = { __type: 'Date', iso: value.toISOString() };
           return;
         }
-
         if (typeof value === 'object') {
           items.push(value);
         }
@@ -69,15 +84,16 @@ export class ObjectReference {
       Object.entries(item).forEach(([key, value]) => {
         if (!value) return;
         switch (key) {
-          case 'ACL':
+          case 'ACL': {
             item[key] = ACL.from(value);
             return;
+          }
         }
         switch (value.__type) {
-          case 'Date':
+          case 'Date': {
             item[key] = new Date(value.iso);
             return;
-
+          }
           case 'Pointer': {
             const obj = new ObjectReference(
               app,
@@ -94,6 +110,10 @@ export class ObjectReference {
             item[key] = obj;
             return;
           }
+          case 'GeoPoint': {
+            item[key] = new GeoPoint(value.latitude, value.longitude);
+            return;
+          }
         }
         if (typeof value === 'object') {
           items.push(value);
@@ -102,13 +122,23 @@ export class ObjectReference {
     }
   }
 
-  toJSON(): Pointer {
-    return new Pointer(this.className, this.objectId);
+  constructor(app: App, className: string, objectId: string) {
+    this.app = app;
+    this.className = className;
+    this.objectId = objectId;
+  }
+
+  toJSON(): LCPointer {
+    return {
+      __type: 'Pointer',
+      className: this.className,
+      objectId: this.objectId,
+    };
   }
 
   async update(
     data: ObjectAttributes,
-    option: ObjectGetOption
+    option?: ObjectGetOption
   ): Promise<ObjectAttributes> {
     removeReservedKeys(data);
     ObjectReference.encodeAdvancedType(data);
@@ -181,4 +211,9 @@ export class File {
     this.name = name;
     this.data = data;
   }
+}
+
+export class GeoPoint implements LCGeoPoint {
+  __type: 'GeoPoint' = 'GeoPoint';
+  constructor(public latitude: number, public longitude: number) {}
 }

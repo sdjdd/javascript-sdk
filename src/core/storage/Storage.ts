@@ -1,7 +1,7 @@
 import { Class } from './Class';
 import { API } from '../API';
 import { FileUploader, QiniuFileProvider } from '../FileUploader';
-import { File } from './Object';
+import { File, LCGeoPoint } from './Object';
 import { UserClassReference } from '../user/User';
 import { App } from '../app';
 import { HTTPResponse } from '../http';
@@ -61,13 +61,3 @@ export class Storage {
 }
 
 export const storage = new Storage(defaultApp);
-
-export class GeoPoint {
-  __type = 'GeoPoint';
-  constructor(public latitude: number, public longitude: number) {}
-}
-
-export class Pointer {
-  __type = 'Pointer';
-  constructor(public className: string, public objectId: string) {}
-}

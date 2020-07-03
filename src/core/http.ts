@@ -9,8 +9,8 @@ export interface HTTPRequest {
 
 export interface HTTPResponse {
   status: number;
-  header: Record<string, string | string[]>;
-  body: unknown;
+  header?: Record<string, string | string[]>;
+  body?: unknown;
 }
 
 export function parseHTTPRequestURL(req: HTTPRequest): string {

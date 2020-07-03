@@ -1,7 +1,4 @@
 {
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.formatOnSave": true,
-  "todo-tree.highlights.defaultHighlight": {
-    "background": "yellow"
-  }
+  "editor.formatOnSave": true
 }
