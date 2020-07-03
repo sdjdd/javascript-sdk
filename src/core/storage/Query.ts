@@ -32,6 +32,8 @@ export class Query {
   private _orderBy: OrderByAttribute[] = [];
   private _select: string[] = [];
 
+  constructor(public app: App, public className: string) {}
+
   static and(...queries: Query[]): Query {
     if (queries.length < 2) {
       throw new Error('The and method receive at least 2 queries');
@@ -48,7 +50,7 @@ export class Query {
       }
     }
 
-    const query = new Query(className, app);
+    const query = new Query(app, className);
     queries.forEach((q) => query._and.push(q._parseWhere()));
     return query;
   }
@@ -60,10 +62,8 @@ export class Query {
     return query;
   }
 
-  constructor(public className: string, public app: App) {}
-
   clone(): Query {
-    const query = new Query(this.className, this.app);
+    const query = new Query(this.app, this.className);
     query._and = [...this._and];
     query._or = [...this._or];
     query._limit = this._limit;
@@ -207,13 +207,15 @@ export class Query {
   }
 
   or(): Query {
+    if (this._and.length === 0) {
+      return this;
+    }
+
     const query = this.clone();
-    if (query._and.length > 0) {
-      if (query._and.length === 1) {
-        query._or.push(query._and[0]);
-      } else {
-        query._or.push(query._and);
-      }
+    if (query._and.length === 1) {
+      query._or.push(query._and[0]);
+    } else {
+      query._or.push(query._and);
     }
     query._and = [];
     return query;
@@ -268,16 +270,6 @@ export class Query {
       } else {
         return { $and: this._and };
       }
-    }
-  }
-
-  private _encodeAnd(): string {
-    if (this._and.length === 0) {
-      return '{}';
-    } else if (this._and.length === 1) {
-      return JSON.stringify(this._and[0]);
-    } else {
-      return JSON.stringify({ $and: this._and });
     }
   }
 

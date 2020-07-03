@@ -13,7 +13,7 @@ export interface UserAttributes extends ObjectAttributes {
 
 export class UserClassReference extends Class {
   constructor(app: App) {
-    super('_User', app);
+    super(app, '_User');
   }
 
   // async add(user: UserAttributes): Promise<User> {

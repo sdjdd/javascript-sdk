@@ -16,7 +16,7 @@ export class Storage {
     if (name == '_User') {
       return this.User;
     }
-    return new Class(name, this.app);
+    return new Class(this.app, name);
   }
 
   batch(): Batch {
