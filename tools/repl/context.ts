@@ -11,6 +11,7 @@ export {
   Operation,
   User,
   Query,
+  ObjectReference,
 } from '../../src/core';
 
 PlatformSupport.setPlatform(node);
