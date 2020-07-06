@@ -30,7 +30,7 @@ export class Query {
   private _limit: number;
   private _skip: number;
   private _orderBy: OrderByAttribute[] = [];
-  private _select: string[] = [];
+  private _select = new Set<string>();
 
   constructor(public app: App, public className: string) {}
 
@@ -56,6 +56,10 @@ export class Query {
   }
 
   static or(...queries: Query[]): Query {
+    if (queries.length < 2) {
+      throw new Error('The or method receive at least 2 queries');
+    }
+
     const query = Query.and(...queries);
     query._or = query._and;
     query._and = [];
@@ -69,7 +73,7 @@ export class Query {
     query._limit = this._limit;
     query._skip = this._skip;
     query._orderBy = [...this._orderBy];
-    query._select = [...this._select];
+    query._select = new Set(this._select);
     return query;
   }
 
@@ -86,13 +90,19 @@ export class Query {
 
   select(...column: string[]): Query {
     const query = this.clone();
-    query._select = query._select.concat(column);
+    column.forEach((col) => {
+      query._select.delete('-' + col);
+      query._select.add(col);
+    });
     return query;
   }
 
   exclude(...column: string[]): Query {
     const query = this.clone();
-    query._select = query._select.concat(column.map((col) => '-' + col));
+    column.forEach((col) => {
+      query._select.delete(col);
+      query._select.add('-' + col);
+    });
     return query;
   }
 
@@ -161,13 +171,13 @@ export class Query {
         if (!(value instanceof Query)) {
           throw new Error('TODO');
         }
-        if (value._select.length > 0) {
-          if (value._select.length !== 1) {
-            throw new Error('TODO');
+        if (value._select.size > 0) {
+          if (value._select.size !== 1) {
+            throw new Error('TODO'); // TODO
           }
           where = {
             $select: {
-              key: value._select[0],
+              key: value._select.values().next().value,
               query: {
                 className: value.className,
                 where: value._parseWhere(),
@@ -196,6 +206,9 @@ export class Query {
           }
           if (re.multiline) {
             $options += 'm';
+          }
+          if (re.dotAll) {
+            $options += 's';
           }
           where = { $regex: re.source, $options };
         } else {
@@ -260,12 +273,10 @@ export class Query {
   _parseWhere(): unknown {
     if (this._or.length > 0) {
       const or = [...this._or];
-      if (this._and.length > 0) {
-        if (this._and.length === 1) {
-          or.push(this._and[0]);
-        } else {
-          or.push(this._and);
-        }
+      if (this._and.length === 1) {
+        or.push(this._and[0]);
+      } else if (this._and.length > 1) {
+        or.push(this._and);
       }
       return { $or: or };
     } else {
@@ -300,8 +311,8 @@ export class Query {
         .map((o) => (o.desc ? '-' : '') + o.key)
         .join(',');
     }
-    if (this._select.length > 0) {
-      req.query.keys = this._select.join(',');
+    if (this._select.size > 0) {
+      req.query.keys = new Array(this._select).join(',');
     }
     return req;
   }

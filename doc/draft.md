@@ -599,3 +599,330 @@ const priorityQuery = Query.or(priority2Query, priority3Query);
 const timeLocationQuery = Query.or(createdAtQuery, locationQuery);
 const query = Query.and(priorityQUery, timeLocationQuery);
 ```
+
+## 用户
+
+用户系统几乎是每款应用都要加入的功能，我们为此专门提供了一个 `User` 类来方便应用使用各项用户管理的功能。
+
+`User` 是 `LCObject` 的子类，这意味着任何 `LCObject` 提供的方法也适用于 `User`，唯一的区别就是 `User` 提供一些额外的用户管理相关的功能。每个应用都有一个专门的 `_User` class 用于存放所有的 AV.User。
+
+### 用户的属性
+
+`User` 相比一个普通的 `LCObject` 多出来以下属性：
+
+- `username`：用户的用户名；
+- `password`：用户的密码；
+- `email`：用户的电子邮箱；
+- `emailVerified`：用户的电子邮箱是否已验证；
+- `mobilePhoneNumber`：用户的手机号；
+- `mobilePhoneVerified`：用户的手机号是否已验证。
+
+在接下来对用户功能的介绍中我们会逐一了解到这些属性。
+
+### 注册
+
+用户第一次打开应用的时候，可以让用户注册一个账户。下面的代码展示了一个典型的使用用户名和密码注册的流程：
+
+```js
+auth
+  .add({
+    username: 'tom',
+    password: 'cat!@#123',
+    email: 'tim@leancloud.rocks', // 可选
+    mobilePhoneNumber: '+8618200008888', // 可选
+    gender: 'secret', // 设置其他属性的方法跟 LCObject 一样
+  })
+  .then((user) => console.log(`注册成功，objectId：${user.objectId}`))
+  .catch((error) => {
+    // 注册失败（通常是因为用户名已被使用）
+  });
+```
+
+如果收到 `202` 错误码，意味着 `_User` 表里已经存在使用同一 `username` 的账号，此时应提示用户换一个用户名。除此之外，每个用户的 `email` 和 `mobilePhoneNumber` 也需要保持唯一性，否则会收到 `203` 或 `214` 错误。可以考虑在注册时把用户的 `username` 设为与 `email` 相同，这样用户可以直接 [用邮箱重置密码](#TODO)。
+
+> 采用「用户名 + 密码」注册时需要注意：密码是以明文方式通过 HTTPS 加密传输给云端，云端会以密文存储密码（云端对密码的长度、复杂度不作限制），并且我们的加密算法是无法通过所谓「彩虹表撞库」获取的，这一点请开发者放心。换言之，用户的密码只可能用户本人知道，开发者不论是通过控制台还是 API 都是无法获取。另外我们需要强调 **在客户端，应用切勿再次对密码加密，这会导致 [重置密码](#TODO) 等功能失效**。
+
+### 手机号注册
+
+对于移动应用来说，允许用户以手机号注册是个很常见的需求。实现该功能大致分两步，第一步是让用户提供手机号，点击「获取验证码」按钮后，该号码会收到一个六位数的验证码：
+
+```js
+cloud.requestSMSCode('+8618200008888');
+```
+
+用户填入验证码后，用下面的方法完成注册：
+
+```js
+auth
+  .signUpByMobilePhone('+8618200008888', '123456')
+  .then((user) => {
+    // 注册成功。如果用户已经注册，此操作相当于登录
+    console.log(`注册成功。objectId：${user.id}`);
+  })
+  .catch((error) => {
+    // 验证码不正确
+  });
+```
+
+> `username` 将与 `mobilePhoneNumber` 相同，`password` 会由云端随机生成。
+>
+> 如果希望让用户指定密码，可以在客户端让用户填写手机号和密码，然后按照上一小节使用用户名和密码注册的流程，将用户填写的手机号作为 `username` 和 `mobilePhoneNumber` 的值同时提交。
+>
+> 同时根据业务需求，在「控制台 > 存储 > 用户 > 设置」勾选「从客户端注册或更新手机号时，向注册手机号码发送验证短信」、「未验证手机号码的用户，禁止登录」、「已验证手机号码的用户，允许以短信验证码登录」。
+
+### 登录
+
+下面的代码用用户名和密码登录一个账户：
+
+```js
+auth
+  .logIn('Tom', 'cat!@#123')
+  .then((user) => {
+    // 登录成功
+  })
+  .catch((error) => {
+    // 登录失败（可能是密码错误）
+  });
+```
+
+### 验证邮箱
+
+可以通过要求用户在登录或使用特定功能之前验证邮箱的方式防止恶意注册。默认情况下，当用户注册或变更邮箱后，`emailVerified` 会被设为 `false`。在应用的 **控制台 > 存储 > 设置** 中，可以开启 **从客户端注册邮箱或者更新邮箱时，发送验证邮件** 选项，这样当用户注册或变更邮箱时，会收到一封含有验证链接的邮件。在同一设置页面还可找到阻止未验证邮箱的用户登录的选项。
+
+如果用户忘记点击链接并且在未来某一时刻需要进行验证，可以用下面的代码发送一封新的邮件：
+
+```js
+auth.requestEmailVerify('tom@leancloud.rocks');
+```
+
+用户点击邮件内的链接后，`emailVerified` 会变为 `true`。如果用户的 `email` 属性为空，则该属性永远不会为 `true`。
+
+### 验证手机号
+
+和 [验证邮箱](#验证邮箱) 类似，应用还可以要求用户在登录或使用特定功能之前验证手机号。默认情况下，当用户注册或变更手机号后，`mobilePhoneVerified` 会被设为 `false`。在应用的「控制台 > 存储 > 用户 > 设置」中，可以开启 **从客户端注册或更新手机号时，向注册手机号码发送验证短信** 选项，这样当用户注册或变更手机号时，会收到一条含有验证码的短信。在同一设置页面还可找到阻止未验证手机号的用户登录的选项。
+
+可以用下面的代码发送一条新的验证码（如果相应用户的 mobilePhoneVerified 已经为 true，那么验证短信不会发送）：
+
+```js
+auth.requestMobilePhoneVerify('+8618200008888');
+```
+
+用户填写验证码后，调用下面的方法来完成验证。`mobilePhoneVerified` 将变为 `true`：
+
+```js
+auth
+  .verifyMobilePhone('123456')
+  .then(() => {
+    // mobilePhoneVerified 将变为 true
+  })
+  .catch((error) => {
+    // 验证码不正确
+  });
+```
+
+### 当前用户
+
+用户登录后，SDK 会自动将会话信息存储到客户端，这样用户在下次打开客户端时无需再次登录。下面的代码检查是否有已经登录的用户：
+
+```js
+const currentUser = auth.currentUser;
+if (currentUser) {
+  // 跳到首页
+} else {
+  // 显示注册或登录页面
+}
+```
+
+会话信息会长期有效，直到用户主动登出：
+
+```js
+auth.logOut();
+
+// currentUser 变为 null
+const currentUser = auth.currentUser;
+```
+
+### 设置当前用户
+
+用户登录后，云端会返回一个 **sessionToken** 给客户端，它会由 SDK 缓存起来并用于日后同一 `User` 的鉴权请求。sessionToken 会被包含在每个客户端发起的 HTTP 请求的 header 里面，这样云端就知道是哪个 `User` 发起的请求了。
+
+以下是一些应用可能需要用到 sessionToken 的场景：
+
+- 应用根据以前缓存的 sessionToken 登录（可以用 auth.currentUser.sessionToken 获取到当前用户的 sessionToken）。
+- 应用内的某个 WebView 需要知道当前登录的用户。
+- 在服务端登录后，返回 sessionToken 给客户端，客户端根据返回的 sessionToken 登录。
+
+下面的代码使用 sessionToken 登录一个用户（云端会验证 sessionToken 是否有效）：
+
+```js
+auth
+  .become('anmlwi96s381m6ca7o7266pzf')
+  .then((user) => {
+    // 登录成功
+  })
+  .catch((error) => {
+    // sessionToken 无效
+  });
+```
+
+> **请避免在外部浏览器使用 URL 来传递 sessionToken，以防范信息泄露风险。**
+
+> 如果在 **控制台 > 存储 > 设置** 中勾选了 **密码修改后，强制客户端重新登录**，那么当一个用户修改密码后，该用户的 session token 会被重置。此时需要让用户重新登录，否则会遇到 [403 (Forbidden)](#TODO) 错误。
+
+下面的代码检查 session token 是否有效：
+
+```js
+const { currentUser } = auth;
+currentUser.isAuthenticated().then((authenticated) => {
+  if (authenticated) {
+    // sessionToken 有效
+  } else {
+    // sessionToken 无效
+  }
+});
+```
+
+### 重置密码
+
+我们都知道，应用一旦加入账户密码系统，那么肯定会有用户忘记密码的情况发生。对于这种情况，我们为用户提供了多种重置密码的方法。
+
+邮箱重置密码的流程如下：
+
+1. 用户输入注册的电子邮箱，请求重置密码；
+2. LeanCloud 向该邮箱发送一封包含重置密码的特殊链接的电子邮件；
+3. 用户点击重置密码链接后，一个特殊的页面会打开，让他们输入新密码；
+4. 用户的密码已被重置为新输入的密码。
+
+首先让用户填写注册账户时使用的邮箱，然后调用下面的方法：
+
+```js
+auth.requestPasswordReset('tom@leancloud.rocks');
+```
+
+上面的代码会查询 `_User` 表中是否有对象的 `email` 属性与前面提供的邮箱匹配。如果有的话，则向该邮箱发送一封密码重置邮件。之前提到过，应用可以让 `username` 与 `email` 保持一致，也可以单独收集用户的邮箱并将其存为 `email`。
+
+> 密码重置邮件的内容可在应用的 **控制台 > 设置 > 邮件模版** 中自定义。更多关于自定义邮件模板和验证链接的内容，请参考 [自定义邮件验证和重设密码页面](#TODO)。
+
+除此之外，还可以用手机号重置密码：
+
+1. 用户输入注册的手机号，请求重置密码；
+2. LeanCloud 向该号码发送一条包含验证码的短信；
+3. 用户输入验证码和新密码。
+
+下面的代码向用户发送含有验证码的短信：
+
+```js
+auth.requestPasswordResetBySmsCode('+8618200008888');
+```
+
+上面的代码会查询 `_User` 表中是否有对象的 `mobilePhoneNumber` 属性与前面提供的手机号匹配。如果有的话，则向该号码发送验证码短信。
+
+> 可以在 **控制台 > 存储 > 设置** 中设置只有在 `mobilePhoneVerified` 为 `true` 的情况下才能用手机号重置密码。
+
+用户输入验证码和新密码后，用下面的代码完成密码重置：
+
+```js
+auth
+  .resetPasswordBySmsCode('123456', 'cat!@#123')
+  .then(() => {
+    // 密码重置成功
+  })
+  .catch((error) => {
+    // 验证码不正确
+  });
+```
+
+### 用户的查询
+
+可以直接构建一个针对 `_User` 的 `Query` 来查询用户：
+
+```js
+const userQuery = storage.class('_User');
+```
+
+为了安全起见，**新创建的应用的 `_User` 表默认关闭了 `find` 权限**，这样每位用户登录后只能查询到自己在 `_User` 表中的数据，无法查询其他用户的数据。如果需要让其查询其他用户的数据，建议单独创建一张表来保存这类数据，并开放这张表的 `find` 查询权限。除此之外，还可以在 [云引擎](#TODO) 里封装用户查询相关的方法，这样就无需开放 `_User` 表的 `find` 权限。
+
+可以参见 [用户对象的安全](#TODO) 来了解 `_User` 表的一些限制，还可以阅读 [数据和安全](#TODO) 来了解更多 class 级权限设置的方法。
+
+### 关联用户对象
+
+关联 `User` 的方法和 `LCObject` 是一样的。下面的代码为一名作者保存了一本书，然后获取所有该作者写的书：
+
+```js
+const Book = storage.class('Book');
+const author = auth.currentUser;
+Book.add({
+  title: '我的第五本书',
+  author: author,
+}).then((book) => {
+  Book.where('author', '==', author)
+    .find()
+    .then((books) => {
+      // books 是包含同一作者所有 Book 对象的数组
+    });
+});
+```
+
+### 用户对象的安全
+
+`User` 类自带安全保障，保证每个用户只能修改自己的数据。
+
+这样设计是因为 `User` 中存储的大多数数据都比较敏感，包括手机号、社交网络账号等等。为了用户的隐私安全，即使是应用的开发者也应避免直接接触这些数据。
+
+下面的代码展现了这种安全措施：
+
+```js
+auth.logIn('Tom', 'cat!@#123').then((user) => {
+  // 密码已被加密，这样做会获取到空字符串
+  const { password } = user.data;
+  user
+    .update({
+      username: 'Jerry', // 试图修改用户名
+    })
+    .then((user) => {
+      // 可以执行，因为用户已鉴权
+
+      // 会出错，因为用户未鉴权
+      storage.class('_User').object(user.objectId).update({
+        username: 'Toodle',
+      });
+    });
+});
+```
+
+通过 `auth.currentUser` 获取的 `User` 总是经过鉴权的。
+
+要查看一个 `User` 是否经过鉴权，可以调用 `isAuthenticated` 方法。通过经过鉴权的方法获取到的 `User` 无需进行该检查。
+
+注意，用户的密码只能在注册的时候进行设置，日后如需修改，只能通过 [重置密码](#重置密码) 的方式进行。密码不会被缓存在本地。如果尝试直接获取已登录用户的密码，会得到 `null`。
+
+### 匿名用户
+
+将数据与用户关联需要首先创建一个用户，但有时你不希望强制用户在一开始就进行注册。使用匿名用户，可以让应用不提供注册步骤也能创建用户。下面的代码创建一个新的匿名用户：
+
+```js
+auth.loginAnonymously().then((user) => {
+  // user 是新的匿名用户
+});
+```
+
+可以像给普通用户设置属性那样给匿名用户设置 `username`、`password`、`email` 等属性，还可以通过走正常的注册流程来将匿名用户转化为普通用户。
+
+下面的代码检查当前用户是否为匿名用户：
+
+```js
+// currentUser 是个匿名用户
+auth.currentUser
+  .update({
+    username: 'Tom',
+    password: 'cat!@#123',
+  })
+  .then((user) => {
+    // currentUser 已经转化为普通用户
+  })
+  .catch((error) => {
+    // currentUser 不是匿名用户
+  });
+```
+
+如果匿名用户未能在登出前转化为普通用户，那么该用户将无法再次登录同一账户，且之前产生的数据也无法被取回。

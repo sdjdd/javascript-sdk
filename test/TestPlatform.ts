@@ -17,6 +17,10 @@ export class TestNetwork implements Network {
     return this._requests.pop();
   }
 
+  setDefaultResponse(res: HTTPResponse): void {
+    this._defaultResponse = res;
+  }
+
   async request(req: HTTPRequest): Promise<HTTPResponse> {
     this._requests.push(req);
     if (this._responses.length > 0) {

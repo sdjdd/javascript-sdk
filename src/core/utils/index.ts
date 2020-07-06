@@ -1,5 +1,4 @@
 export * from './http';
-export * from './api';
 
 export function checkObjectTag(obj: unknown, name: string): boolean {
   return Object.prototype.toString.call(obj) === '[object ' + name + ']';
