@@ -1,4 +1,4 @@
-import { App, AppConfig } from './app';
+import { App, AppConfig } from './App';
 
 export const defaultApp = new App({
   appId: '',

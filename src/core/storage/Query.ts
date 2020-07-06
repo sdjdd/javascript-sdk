@@ -1,4 +1,4 @@
-import { App } from '../app';
+import { App } from '../App';
 import { ObjectAttributes, ObjectReference } from './Object';
 import { PlatformSupport } from '../Platform';
 import { isRegExp } from '../utils';
@@ -15,7 +15,7 @@ export type Condition =
   | 'not-exists'
   | 'has'
   | 'has-any'
-  | 'length-is'
+  | 'size-is'
   | 'in'
   | 'matchs';
 
@@ -86,7 +86,13 @@ export class Query {
 
   select(...column: string[]): Query {
     const query = this.clone();
-    query._select = column;
+    query._select = query._select.concat(column);
+    return query;
+  }
+
+  exclude(...column: string[]): Query {
+    const query = this.clone();
+    query._select = query._select.concat(column.map((col) => '-' + col));
     return query;
   }
 
@@ -142,7 +148,7 @@ export class Query {
         }
         break;
 
-      case 'length-is':
+      case 'size-is':
         if (typeof value !== 'number') {
           throw new TypeError(
             'condition "lengthIs" receives a number parameter'

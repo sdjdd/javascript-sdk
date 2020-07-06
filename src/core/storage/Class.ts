@@ -1,6 +1,6 @@
 import { ObjectReference, ObjectAttributes } from './Object';
 import { Query } from './Query';
-import { App } from '../app';
+import { App } from '../App';
 import { PlatformSupport } from '../Platform';
 import { checkUluruResponse } from '../utils';
 

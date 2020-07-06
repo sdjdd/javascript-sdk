@@ -1,4 +1,4 @@
-import { AppInfo } from './app';
+import { AppInfo } from './App';
 import { Network } from './Platform';
 import { HTTPRequest } from './http';
 

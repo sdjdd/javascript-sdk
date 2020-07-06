@@ -15,73 +15,73 @@ describe('Query', function () {
   describe('#where', function () {
     it('where("key", "==", "value")', async function () {
       await Test.where('key', '==', 'value').find();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.where.should.eql('{"key":"value"}');
     });
 
     it('where("key", "!=", "value")', async function () {
       await Test.where('key', '!=', 'value').find();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.where.should.eql('{"key":{"$ne":"value"}}');
     });
 
     it('where("key", "<", "value")', async function () {
       await Test.where('key', '<', 'value').find();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.where.should.eql('{"key":{"$lt":"value"}}');
     });
 
     it('where("key", "<=", "value")', async function () {
       await Test.where('key', '<=', 'value').find();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.where.should.eql('{"key":{"$lte":"value"}}');
     });
 
     it('where("key", ">", "value")', async function () {
       await Test.where('key', '>', 'value').find();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.where.should.eql('{"key":{"$gt":"value"}}');
     });
 
     it('where("key", ">=", "value")', async function () {
       await Test.where('key', '>=', 'value').find();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.where.should.eql('{"key":{"$gte":"value"}}');
     });
 
     it('where("key", "exists")', async function () {
       await Test.where('key', 'exists').find();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.where.should.eql('{"key":{"$exists":true}}');
     });
 
     it('where("key", "not-exists")', async function () {
       await Test.where('key', 'not-exists').find();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.where.should.eql('{"key":{"$exists":false}}');
     });
 
     it('where("key", "has", "value")', async function () {
       await Test.where('key', 'has', 'value').find();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.where.should.eql('{"key":"value"}');
     });
 
     it('where("key", "has", ["value1", "value2"])', async function () {
       await Test.where('key', 'has', ['value1', 'value2']).find();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.where.should.eql('{"key":{"$all":["value1","value2"]}}');
     });
 
     it('where("key", "has-any", ["value1", "value2"])', async function () {
       await Test.where('key', 'has-any', ['value1', 'value2']).find();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.where.should.eql('{"key":{"$in":["value1","value2"]}}');
     });
 
-    it('where("key", "length-is", 5)', async function () {
-      await Test.where('key', 'length-is', 5).find();
-      const req = globalTestNetwork.requests.pop();
+    it('where("key", "size-is", 5)', async function () {
+      await Test.where('key', 'size-is', 5).find();
+      const req = globalTestNetwork.popRequest();
       req.query.where.should.eql('{"key":{"$size":5}}');
     });
 
@@ -93,16 +93,13 @@ describe('Query', function () {
         'in',
         Country.select('name').where('language', '==', 'English')
       ).find();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.where.should.eql(
         JSON.stringify({
           nationality: {
             $select: {
               key: 'name',
-              query: {
-                className: 'Country',
-                where: { language: 'English' },
-              },
+              query: { className: 'Country', where: { language: 'English' } },
             },
           },
         })
@@ -113,7 +110,7 @@ describe('Query', function () {
       await Test.where('key1', '==', 'value')
         .where('key2', '==', 'value')
         .find();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.where.should.eql('{"key1":"value","key2":"value"}');
     });
 
@@ -121,15 +118,10 @@ describe('Query', function () {
       await Test.where('key1', '>', 'value1')
         .where('key1', '<', 'value2')
         .find();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.where.should.eql(
         JSON.stringify({
-          $and: [
-            { key1: { $gt: 'value1' } },
-            {
-              key1: { $lt: 'value2' },
-            },
-          ],
+          $and: [{ key1: { $gt: 'value1' } }, { key1: { $lt: 'value2' } }],
         })
       );
     });

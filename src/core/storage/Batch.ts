@@ -1,4 +1,4 @@
-import { App } from '../app';
+import { App } from '../App';
 import { ObjectReference, ObjectAttributes } from './Object';
 import { HTTPRequest } from '../http';
 

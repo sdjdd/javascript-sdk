@@ -145,13 +145,13 @@ describe('ObjectReference', function () {
 
     it('should send "PUT" request', async function () {
       await obj.update({});
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.method.should.eql('PUT');
     });
 
     it('should send request to correct path', async function () {
       await obj.update({});
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.path.should.endWith(`/${obj.className}/${obj.objectId}`);
     });
 
@@ -162,18 +162,14 @@ describe('ObjectReference', function () {
         key3: 'value3',
       };
       await obj.update(data);
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.body.should.eql(data);
     });
 
     it('should remove reserved keys', async function () {
-      const data = {
-        objectId: '---',
-        createdAt: '---',
-        updatedAt: '---',
-      };
+      const data = { objectId: '-', createdAt: '-', updatedAt: '-' };
       await obj.update(data);
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       ((req.body as any).objectId === undefined).should.true();
       ((req.body as any).createdAt === undefined).should.true();
       ((req.body as any).updatedAt === undefined).should.true();
@@ -182,7 +178,7 @@ describe('ObjectReference', function () {
     it('should set correct query when include keys', async function () {
       const include = ['key1', 'key2', 'key3'];
       await obj.update({}, { include });
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.should.eql({
         include: include.join(','),
       });
@@ -199,13 +195,13 @@ describe('ObjectReference', function () {
 
     it('should send "DELETE" request', async function () {
       await obj.delete();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.method.should.eql('DELETE');
     });
 
     it('should send request to correct path', async function () {
       await obj.delete();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.path.should.endWith(`/${obj.className}/${obj.objectId}`);
     });
   });
@@ -220,29 +216,29 @@ describe('ObjectReference', function () {
 
     it('should send "GET" request', async function () {
       await obj.get();
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.method.should.eql('GET');
     });
 
     it('should set correct query when include keys', async function () {
       const include = ['key1', 'key2', 'key3'];
       await obj.get({ include });
-      const req = globalTestNetwork.requests.pop();
+      const req = globalTestNetwork.popRequest();
       req.query.should.eql({
         include: include.join(','),
       });
     });
 
-    it('should return correct data', async function () {
+    it('should return correct reference', async function () {
       const data = {
         key1: 'value1',
         key2: 'value2',
         key3: 'value3',
       };
-      globalTestNetwork.setNextResponse({ status: 200, body: data });
-      const attr = await obj.get();
-      globalTestNetwork.requests.pop();
-      attr.should.eql(data);
+      globalTestNetwork.pushResponse({ status: 200, body: data });
+      const newObj = await obj.get();
+      globalTestNetwork.popRequest();
+      newObj.data.should.eql(data);
     });
   });
 });

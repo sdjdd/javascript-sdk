@@ -1,6 +1,5 @@
 import { PlatformSupport } from './Platform';
 import { HTTPRequest } from './http';
-import { defaultApp } from './global';
 
 export interface AppConfig {
   appId: string;
@@ -18,10 +17,6 @@ export interface AppInfo {
 export class App {
   name: string;
   info: AppInfo;
-
-  static get default(): App {
-    return defaultApp;
-  }
 
   constructor(config?: AppConfig) {
     this.info = {

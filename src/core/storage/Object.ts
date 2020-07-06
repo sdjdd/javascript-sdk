@@ -1,8 +1,8 @@
 import { v4 as uuid } from 'uuid';
-import { App } from '../app';
+import { App } from '../App';
 import { isDate, checkUluruResponse } from '../utils';
 import { ACL } from './ACL';
-import { PlatformSupport, Platform } from '../Platform';
+import { PlatformSupport } from '../Platform';
 
 const RESERVED_KEYS = new Set(['objectId', 'createdAt', 'updatedAt']);
 function removeReservedKeys(obj: Record<string, unknown>) {
@@ -171,7 +171,7 @@ export class ObjectReference {
     checkUluruResponse(res);
   }
 
-  async get(option?: ObjectGetOption): Promise<ObjectAttributes> {
+  async get(option?: ObjectGetOption): Promise<ObjectReference> {
     if (!this.objectId) {
       throw new Error('Cannot get an object without objectId');
     }
@@ -189,7 +189,10 @@ export class ObjectReference {
 
     const attr = res.body as ObjectAttributes;
     ObjectReference.decodeAdvancedType(this.app, attr);
-    return attr;
+
+    const obj = new ObjectReference(this.app, this.className, this.objectId);
+    obj.data = attr;
+    return obj;
   }
 }
 

@@ -1,6 +1,6 @@
 import { File } from './storage/Object';
 import { HTTPResponse } from './http';
-import { App } from './app';
+import { App } from './App';
 import { PlatformSupport } from './Platform';
 
 export abstract class FileUploader {

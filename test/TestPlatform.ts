@@ -2,24 +2,25 @@ import { Platform, Network, FileData, PlatformSupport } from '../src/core';
 import { HTTPRequest, HTTPResponse } from '../src/core/http';
 
 export class TestNetwork implements Network {
-  requests: HTTPRequest[] = [];
-
-  private _nextResponse: HTTPResponse;
+  private _requests: HTTPRequest[] = [];
+  private _responses: HTTPResponse[] = [];
   private _defaultResponse: HTTPResponse = {
     status: 200,
     body: {},
   };
 
-  setNextResponse(res: HTTPResponse): void {
-    this._nextResponse = res;
+  pushResponse(res: HTTPResponse): void {
+    this._responses.push(res);
+  }
+
+  popRequest(): HTTPRequest {
+    return this._requests.pop();
   }
 
   async request(req: HTTPRequest): Promise<HTTPResponse> {
-    this.requests.push(req);
-    if (this._nextResponse) {
-      const res = this._nextResponse;
-      this._nextResponse = null;
-      return res;
+    this._requests.push(req);
+    if (this._responses.length > 0) {
+      return this._responses.pop();
     }
     return this._defaultResponse;
   }

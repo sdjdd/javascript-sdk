@@ -2,7 +2,7 @@ import { Class } from './Class';
 import { FileUploader, QiniuFileProvider } from '../FileUploader';
 import { File, LCGeoPoint } from './Object';
 import { UserClassReference } from '../user/User';
-import { App } from '../app';
+import { App } from '../App';
 import { HTTPResponse } from '../http';
 import { defaultApp } from '../global';
 import { Batch } from './Batch';

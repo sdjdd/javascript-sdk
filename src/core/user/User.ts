@@ -1,6 +1,6 @@
 import { ObjectReference, ObjectAttributes } from '../storage/Object';
 import { Class } from '../storage/Class';
-import { App } from '../app';
+import { App } from '../App';
 
 export interface UserAttributes extends ObjectAttributes {
   username: string;
