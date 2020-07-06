@@ -1,5 +1,3 @@
-import { User } from '../user/User';
-
 export type ACLSubject = '*' | string;
 export type ACLAction = 'read' | 'write';
 

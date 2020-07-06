@@ -1,21 +1,15 @@
 import { Class } from './Class';
 import { FileUploader, QiniuFileProvider } from '../FileUploader';
-import { File, LCGeoPoint } from './Object';
-import { UserClassReference } from '../user/User';
+import { File } from './Object';
 import { App } from '../App';
 import { HTTPResponse } from '../http';
 import { defaultApp } from '../global';
 import { Batch } from './Batch';
 
 export class Storage {
-  User: UserClassReference;
-
   constructor(public app: App) {}
 
   class(name: string): Class {
-    if (name == '_User') {
-      return this.User;
-    }
     return new Class(this.app, name);
   }
 

@@ -15,12 +15,14 @@ export interface HTTPResponse {
 
 export function parseHTTPRequestURL(req: HTTPRequest): string {
   let url = req.baseURL + (req.path ?? '');
-  const queryStr = Object.entries(req.query)
-    .map(([k, v]) => k + '=' + encodeURIComponent(v))
-    .join('&');
-  if (queryStr.length > 0) {
-    const sp = url.includes('?') ? '&' : '?';
-    url += sp + queryStr;
+  if (req.query) {
+    const qstr = Object.entries(req.query)
+      .map(([k, v]) => k + '=' + encodeURIComponent(v))
+      .join('&');
+    if (qstr.length > 0) {
+      const sp = url.includes('?') ? '&' : '?';
+      url += sp + qstr;
+    }
   }
   return url;
 }

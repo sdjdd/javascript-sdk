@@ -3,6 +3,14 @@ import { App } from '../App';
 import { isDate, checkUluruResponse } from '../utils';
 import { ACL } from './ACL';
 import { PlatformSupport } from '../Platform';
+import {
+  IObject,
+  IGeoPoint,
+  IPointer,
+  IObjectData,
+  IObjectGetOption,
+  IObjectUpdateOption,
+} from '../types';
 
 const RESERVED_KEYS = new Set(['objectId', 'createdAt', 'updatedAt']);
 function removeReservedKeys(obj: Record<string, unknown>) {
@@ -13,39 +21,11 @@ function removeReservedKeys(obj: Record<string, unknown>) {
   });
 }
 
-export interface LCDate {
-  __type: 'Date';
-  iso: string;
-}
-
-export interface LCPointer {
-  __type: 'Pointer';
-  className: string;
-  objectId: string;
-}
-
-export interface LCGeoPoint {
-  __type: 'GeoPoint';
-  latitude: number;
-  longitude: number;
-}
-
-export interface ObjectAttributes {
-  objectId?: string;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
-  [key: string]: unknown;
-}
-
-export interface ObjectGetOption {
-  include?: string[];
-}
-
-export class ObjectReference {
+export class LCObject implements IObject {
   app: App;
   className: string;
   objectId: string;
-  data?: ObjectAttributes;
+  data?: IObjectData;
 
   // TODO: rafactor
   static encodeAdvancedType(obj: Record<string, unknown>): void {
@@ -54,7 +34,7 @@ export class ObjectReference {
       const item = items.shift();
       Object.entries(item).forEach(([key, value]) => {
         if (!value) return;
-        if (value instanceof ObjectReference) {
+        if (value instanceof LCObject) {
           item[key] = value.toJSON();
           return;
         }
@@ -70,7 +50,7 @@ export class ObjectReference {
   }
 
   // TODO: rafactor
-  static decodeAdvancedType(app: App, data: ObjectAttributes): void {
+  static decodeAdvancedType(app: App, data: IObjectData): void {
     if (data.createdAt) {
       data.createdAt = new Date(data.createdAt);
     }
@@ -95,11 +75,7 @@ export class ObjectReference {
             return;
           }
           case 'Pointer': {
-            const obj = new ObjectReference(
-              app,
-              value.className,
-              value.objectId
-            );
+            const obj = new LCObject(app, value.className, value.objectId);
             delete value.__type;
             delete value.className;
             delete value.objectId;
@@ -128,7 +104,7 @@ export class ObjectReference {
     this.objectId = objectId;
   }
 
-  toJSON(): LCPointer {
+  toJSON(): IPointer {
     return {
       __type: 'Pointer',
       className: this.className,
@@ -137,25 +113,27 @@ export class ObjectReference {
   }
 
   async update(
-    data: ObjectAttributes,
-    option?: ObjectGetOption
-  ): Promise<ObjectAttributes> {
+    data: IObjectData,
+    option?: IObjectUpdateOption
+  ): Promise<LCObject> {
     removeReservedKeys(data);
-    ObjectReference.encodeAdvancedType(data);
+    LCObject.encodeAdvancedType(data);
     const req = this.app._makeBaseRequest(
       'PUT',
       `/1.1/classes/${this.className}/${this.objectId}`
     );
     req.body = data;
     if (option?.include) {
-      req.query = { include: option.include.join(',') };
+      req.query.include = option.include.join(',');
     }
 
     const platform = PlatformSupport.getPlatform();
     const res = await platform.network.request(req);
     checkUluruResponse(res);
 
-    return res.body as ObjectAttributes;
+    const obj = new LCObject(this.app, this.className, this.objectId);
+    obj.data = res.body as IObjectData;
+    return obj;
   }
 
   async delete(): Promise<void> {
@@ -171,7 +149,7 @@ export class ObjectReference {
     checkUluruResponse(res);
   }
 
-  async get(option?: ObjectGetOption): Promise<ObjectReference> {
+  async get(option?: IObjectGetOption): Promise<LCObject> {
     if (!this.objectId) {
       throw new Error('Cannot get an object without objectId');
     }
@@ -180,17 +158,17 @@ export class ObjectReference {
       `/1.1/classes/${this.className}/${this.objectId}`
     );
     if (option?.include) {
-      req.query = { include: option.include.join(',') };
+      req.query.include = option.include.join(',');
     }
 
     const platform = PlatformSupport.getPlatform();
     const res = await platform.network.request(req);
     checkUluruResponse(res);
 
-    const attr = res.body as ObjectAttributes;
-    ObjectReference.decodeAdvancedType(this.app, attr);
+    const attr = res.body as IObjectData;
+    LCObject.decodeAdvancedType(this.app, attr);
 
-    const obj = new ObjectReference(this.app, this.className, this.objectId);
+    const obj = new LCObject(this.app, this.className, this.objectId);
     obj.data = attr;
     return obj;
   }
@@ -216,7 +194,7 @@ export class File {
   }
 }
 
-export class GeoPoint implements LCGeoPoint {
+export class GeoPoint implements IGeoPoint {
   __type: 'GeoPoint' = 'GeoPoint';
   constructor(public latitude: number, public longitude: number) {}
 }

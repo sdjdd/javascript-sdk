@@ -56,5 +56,3 @@ export function setGlobalTestPlatform(): void {
     // ignore
   }
 }
-
-setGlobalTestPlatform();

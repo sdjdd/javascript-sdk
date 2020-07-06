@@ -1,8 +1,9 @@
-import { ObjectReference, ObjectAttributes } from '../storage/Object';
+import { LCObject } from '../storage/Object';
 import { Class } from '../storage/Class';
 import { App } from '../App';
+import { IObjectData, IUser } from '../types';
 
-export interface UserAttributes extends ObjectAttributes {
+export interface UserAttributes extends IObjectData {
   username: string;
   password: string;
   email?: string;
@@ -22,7 +23,7 @@ export class UserClassReference extends Class {
   // }
 }
 
-export class User extends ObjectReference {
+export class User extends LCObject implements IUser {
   sessionToken: string;
 
   constructor(app: App, objectId: string) {

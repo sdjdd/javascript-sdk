@@ -1,6 +1,7 @@
 import 'should';
-import { ObjectReference, App } from '../src/core';
-import { LCDate, LCPointer, LCGeoPoint, GeoPoint } from '../src/core/storage';
+import { LCObject, App } from '../src/core';
+import { IGeoPoint, IDate, IPointer } from '../src/core/types';
+import { GeoPoint } from '../src/core/storage';
 import { setGlobalTestPlatform, globalTestNetwork } from './TestPlatform';
 
 setGlobalTestPlatform();
@@ -10,64 +11,64 @@ describe('ObjectReference', function () {
     it('should encode Date', function () {
       const date = new Date();
       const data: Record<string, unknown> = { date };
-      ObjectReference.encodeAdvancedType(data);
-      (data.date as LCDate).__type.should.eql('Date');
-      (data.date as LCDate).iso.should.eql(date.toISOString());
+      LCObject.encodeAdvancedType(data);
+      (data.date as IDate).__type.should.eql('Date');
+      (data.date as IDate).iso.should.eql(date.toISOString());
     });
 
     it('should encode Pointer', function () {
-      const ptr = new ObjectReference(null, 'Test', 'test-id');
+      const ptr = new LCObject(null, 'Test', 'test-id');
       const data: Record<string, unknown> = { ptr };
-      ObjectReference.encodeAdvancedType(data);
-      (data.ptr as LCPointer).__type.should.eql('Pointer');
-      (data.ptr as LCPointer).className.should.eql(ptr.className);
-      (data.ptr as LCPointer).objectId.should.eql(ptr.objectId);
+      LCObject.encodeAdvancedType(data);
+      (data.ptr as IPointer).__type.should.eql('Pointer');
+      (data.ptr as IPointer).className.should.eql(ptr.className);
+      (data.ptr as IPointer).objectId.should.eql(ptr.objectId);
     });
 
     it('should encode GeoPoint', function () {
       const geo = new GeoPoint(1.5, 2.5);
       const data: Record<string, unknown> = { geo };
-      ObjectReference.encodeAdvancedType(data);
-      (data.geo as LCGeoPoint).__type.should.eql('GeoPoint');
-      (data.geo as LCGeoPoint).latitude.should.eql(geo.latitude);
-      (data.geo as LCGeoPoint).longitude.should.eql(geo.longitude);
+      LCObject.encodeAdvancedType(data);
+      (data.geo as IGeoPoint).__type.should.eql('GeoPoint');
+      (data.geo as IGeoPoint).latitude.should.eql(geo.latitude);
+      (data.geo as IGeoPoint).longitude.should.eql(geo.longitude);
     });
 
     it('should encode data which in a sub-object', function () {
       const date = new Date();
       const data = { obj: { date, obj: { date } } };
-      ObjectReference.encodeAdvancedType(data);
+      LCObject.encodeAdvancedType(data);
       [data.obj.date, data.obj.obj.date].forEach((t) => {
-        ((t as unknown) as LCDate).__type.should.eql('Date');
-        ((t as unknown) as LCDate).iso.should.eql(date.toISOString());
+        ((t as unknown) as IDate).__type.should.eql('Date');
+        ((t as unknown) as IDate).iso.should.eql(date.toISOString());
       });
     });
 
     it('should encode data which in a sub-array', function () {
       const date = new Date();
       const data = { arr: [date, [date]] };
-      ObjectReference.encodeAdvancedType(data);
+      LCObject.encodeAdvancedType(data);
       [data.arr[0], data.arr[1][0]].forEach((t) => {
-        ((t as unknown) as LCDate).__type.should.eql('Date');
-        ((t as unknown) as LCDate).iso.should.eql(date.toISOString());
+        ((t as unknown) as IDate).__type.should.eql('Date');
+        ((t as unknown) as IDate).iso.should.eql(date.toISOString());
       });
     });
   });
 
   describe('.decodeAdvancedType', function () {
     it('should decode Date', function () {
-      const date: LCDate = {
+      const date: IDate = {
         __type: 'Date',
         iso: '2020-01-02T03:04:05.061Z',
       };
       const data: Record<string, unknown> = { date };
-      ObjectReference.decodeAdvancedType(null, data);
+      LCObject.decodeAdvancedType(null, data);
       data.date.should.instanceOf(Date);
       (data.date as Date).toISOString().should.eql(date.iso);
     });
 
     it('should decode Pointer', function () {
-      const ptr: LCPointer = {
+      const ptr: IPointer = {
         __type: 'Pointer',
         className: 'Test',
         objectId: 'test-id',
@@ -78,33 +79,33 @@ describe('ObjectReference', function () {
         serverURL: 'test-url',
       });
       const data: Record<string, unknown> = { ptr: { ...ptr } };
-      ObjectReference.decodeAdvancedType(app, data);
-      data.ptr.should.instanceOf(ObjectReference);
-      (data.ptr as ObjectReference).app.info.appId.should.eql(app.info.appId);
-      (data.ptr as ObjectReference).className.should.eql(ptr.className);
-      (data.ptr as ObjectReference).objectId.should.eql(ptr.objectId);
+      LCObject.decodeAdvancedType(app, data);
+      data.ptr.should.instanceOf(LCObject);
+      (data.ptr as LCObject).app.info.appId.should.eql(app.info.appId);
+      (data.ptr as LCObject).className.should.eql(ptr.className);
+      (data.ptr as LCObject).objectId.should.eql(ptr.objectId);
     });
 
     it('should decode GeoPoint', function () {
-      const geo: LCGeoPoint = {
+      const geo: IGeoPoint = {
         __type: 'GeoPoint',
         latitude: 1.5,
         longitude: 2.5,
       };
       const data: Record<string, unknown> = { geo };
-      ObjectReference.decodeAdvancedType(null, data);
+      LCObject.decodeAdvancedType(null, data);
       data.geo.should.instanceOf(GeoPoint);
       (data.geo as GeoPoint).latitude.should.eql(geo.latitude);
       (data.geo as GeoPoint).longitude.should.eql(geo.longitude);
     });
 
     it('should decode data which in a sub-object', function () {
-      const date: LCDate = {
+      const date: IDate = {
         __type: 'Date',
         iso: '2020-01-02T03:04:05.061Z',
       };
       const data = { obj: { date, obj: { date } } };
-      ObjectReference.decodeAdvancedType(null, data);
+      LCObject.decodeAdvancedType(null, data);
       [data.obj.date, data.obj.obj.date].forEach((t) => {
         t.should.instanceOf(Date);
         ((t as unknown) as Date).toISOString().should.eql(date.iso);
@@ -112,12 +113,12 @@ describe('ObjectReference', function () {
     });
 
     it('should decode data which in a sub-array', function () {
-      const date: LCDate = {
+      const date: IDate = {
         __type: 'Date',
         iso: '2020-01-02T03:04:05.061Z',
       };
       const data = { arr: [date, [date]] };
-      ObjectReference.decodeAdvancedType(null, data);
+      LCObject.decodeAdvancedType(null, data);
       [data.arr[0], data.arr[1][0]].forEach((t) => {
         t.should.instanceOf(Date);
         ((t as unknown) as Date).toISOString().should.eql(date.iso);
@@ -127,7 +128,7 @@ describe('ObjectReference', function () {
 
   describe('#toJSON', function () {
     it('should return a Pointer', function () {
-      const obj = new ObjectReference(null, 'Test', 'test-id');
+      const obj = new LCObject(null, 'Test', 'test-id');
       const ptr = obj.toJSON();
       ptr.__type.should.eql('Pointer');
       ptr.className.should.eql(obj.className);
@@ -141,7 +142,7 @@ describe('ObjectReference', function () {
       appKey: 'test-app-key',
       serverURL: 'test-server-url',
     });
-    const obj = new ObjectReference(app, 'Test', 'test-object-id');
+    const obj = new LCObject(app, 'Test', 'test-object-id');
 
     it('should send "PUT" request', async function () {
       await obj.update({});
@@ -191,7 +192,7 @@ describe('ObjectReference', function () {
       appKey: 'test-app-key',
       serverURL: 'test-server-url',
     });
-    const obj = new ObjectReference(app, 'Test', 'test-object-id');
+    const obj = new LCObject(app, 'Test', 'test-object-id');
 
     it('should send "DELETE" request', async function () {
       await obj.delete();
@@ -212,7 +213,7 @@ describe('ObjectReference', function () {
       appKey: 'test-app-key',
       serverURL: 'test-server-url',
     });
-    const obj = new ObjectReference(app, 'Test', 'test-object-id');
+    const obj = new LCObject(app, 'Test', 'test-object-id');
 
     it('should send "GET" request', async function () {
       await obj.get();

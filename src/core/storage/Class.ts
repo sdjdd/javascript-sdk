@@ -1,24 +1,18 @@
-import { ObjectReference, ObjectAttributes } from './Object';
+import { LCObject } from './Object';
 import { Query } from './Query';
 import { App } from '../App';
 import { PlatformSupport } from '../Platform';
 import { checkUluruResponse } from '../utils';
+import { IObjectData, IClass, IClassAddOption } from '../types';
 
-export interface ClassAddObjectOption {
-  fetch?: boolean;
-}
-
-export class Class extends Query {
+export class Class extends Query implements IClass {
   app: App;
 
-  object(id: string): ObjectReference {
-    return new ObjectReference(this.app, this.className, id);
+  object(id: string): LCObject {
+    return new LCObject(this.app, this.className, id);
   }
 
-  async add(
-    data: Record<string, unknown>,
-    option?: ClassAddObjectOption
-  ): Promise<ObjectReference> {
+  async add(data: IObjectData, option?: IClassAddOption): Promise<LCObject> {
     const req = this.app._makeBaseRequest(
       'POST',
       '/1.1/classes/' + this.className
@@ -32,10 +26,10 @@ export class Class extends Query {
     const res = await platform.network.request(req);
     checkUluruResponse(res);
 
-    const attr = res.body as ObjectAttributes;
+    const attr = res.body as IObjectData;
     const obj = this.object(attr.objectId);
     obj.data = attr;
-    ObjectReference.decodeAdvancedType(this.app, obj.data);
+    LCObject.decodeAdvancedType(this.app, obj.data);
     return obj;
   }
 }

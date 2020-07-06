@@ -9,9 +9,9 @@ export {
   ACL,
   storage,
   Operation,
-  User,
   Query,
-  ObjectReference,
+  LCObject,
+  auth,
 } from '../../src/core';
 
 PlatformSupport.setPlatform(node);

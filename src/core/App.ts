@@ -46,6 +46,7 @@ export class App {
         'X-LC-Key': this.info.appKey,
         'Content-Type': 'application/json',
       },
+      query: {},
     };
   }
 }

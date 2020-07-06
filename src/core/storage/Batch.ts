@@ -1,6 +1,7 @@
 import { App } from '../App';
-import { ObjectReference, ObjectAttributes } from './Object';
+import { LCObject } from './Object';
 import { HTTPRequest } from '../http';
+import { IObjectData } from '../types';
 
 export interface BatchResultSuccess {
   objectId: string;
@@ -22,7 +23,7 @@ export class Batch {
 
   constructor(public app: App) {}
 
-  set(obj: ObjectReference, data: ObjectAttributes): this {
+  set(obj: LCObject, data: IObjectData): this {
     // const req = obj._makeSetRequest(data);
     // this._requests.push(req);
     return this;

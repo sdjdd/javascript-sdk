@@ -1,8 +1,9 @@
 import { App } from '../App';
-import { ObjectAttributes, ObjectReference } from './Object';
+import { LCObject } from './Object';
 import { PlatformSupport } from '../Platform';
 import { isRegExp } from '../utils';
 import { HTTPRequest } from '../http';
+import { IObjectData } from '../types';
 
 export type Condition =
   | '=='
@@ -299,7 +300,6 @@ export class Query {
     if (where != '{}') {
       req.query = { where };
     }
-
     if (this._limit !== undefined) {
       req.query.limit = this._limit.toString();
     }
@@ -317,14 +317,14 @@ export class Query {
     return req;
   }
 
-  async find(): Promise<ObjectReference[]> {
+  async find(): Promise<LCObject[]> {
     const req = this._makeRequest();
 
     const platform = PlatformSupport.getPlatform();
     const res = await platform.network.request(req);
 
     const results = (res.body as {
-      results: ObjectAttributes[];
+      results: IObjectData[];
     }).results;
 
     if (!results) {
@@ -332,12 +332,8 @@ export class Query {
     }
 
     return results.map((result) => {
-      ObjectReference.decodeAdvancedType(this.app, result);
-      const objRef = new ObjectReference(
-        this.app,
-        this.className,
-        result.objectId
-      );
+      LCObject.decodeAdvancedType(this.app, result);
+      const objRef = new LCObject(this.app, this.className, result.objectId);
       objRef.data = result;
       return objRef;
     });
