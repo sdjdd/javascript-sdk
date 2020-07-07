@@ -29,7 +29,7 @@ export class Class extends Query implements IClass {
     const attr = res.body as IObjectData;
     const obj = this.object(attr.objectId);
     obj.data = attr;
-    LCObject.decodeAdvancedType(this.app, obj.data);
+    LCObject.decode(obj.data, this.app);
     return obj;
   }
 }

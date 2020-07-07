@@ -8,6 +8,7 @@ export interface IClass {
 }
 
 export interface IObjectData {
+  className?: string; // pointer only
   objectId?: string;
   createdAt?: string | Date;
   updatedAt?: string | Date;
@@ -40,6 +41,7 @@ export interface IPointer {
   __type: 'Pointer';
   className: string;
   objectId: string;
+  [key: string]: unknown;
 }
 
 export interface IGeoPoint {

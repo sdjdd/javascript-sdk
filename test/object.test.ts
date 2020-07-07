@@ -6,7 +6,7 @@ import { setGlobalTestPlatform, globalTestNetwork } from './TestPlatform';
 
 setGlobalTestPlatform();
 
-describe('ObjectReference', function () {
+describe('LCObject', function () {
   describe('.encodeAdvancedType', function () {
     it('should encode Date', function () {
       const date = new Date();
@@ -55,16 +55,15 @@ describe('ObjectReference', function () {
     });
   });
 
-  describe('.decodeAdvancedType', function () {
+  describe('.decode', function () {
     it('should decode Date', function () {
       const date: IDate = {
         __type: 'Date',
         iso: '2020-01-02T03:04:05.061Z',
       };
-      const data: Record<string, unknown> = { date };
-      LCObject.decodeAdvancedType(null, data);
-      data.date.should.instanceOf(Date);
-      (data.date as Date).toISOString().should.eql(date.iso);
+      const obj = LCObject.decode({ date }, null);
+      obj.data.date.should.instanceOf(Date);
+      (obj.data.date as Date).toISOString().should.eql(date.iso);
     });
 
     it('should decode Pointer', function () {
@@ -72,18 +71,21 @@ describe('ObjectReference', function () {
         __type: 'Pointer',
         className: 'Test',
         objectId: 'test-id',
+        key1: 'value1',
+        key2: 'value2',
       };
       const app = new App({
         appId: 'test-id',
         appKey: 'test-key',
         serverURL: 'test-url',
       });
-      const data: Record<string, unknown> = { ptr: { ...ptr } };
-      LCObject.decodeAdvancedType(app, data);
-      data.ptr.should.instanceOf(LCObject);
-      (data.ptr as LCObject).app.info.appId.should.eql(app.info.appId);
-      (data.ptr as LCObject).className.should.eql(ptr.className);
-      (data.ptr as LCObject).objectId.should.eql(ptr.objectId);
+      const obj = LCObject.decode({ ptr: { ...ptr } }, app);
+      obj.data.ptr.should.instanceOf(LCObject);
+      (obj.data.ptr as LCObject).app.info.appId.should.eql(app.info.appId);
+      (obj.data.ptr as LCObject).className.should.eql(ptr.className);
+      (obj.data.ptr as LCObject).objectId.should.eql(ptr.objectId);
+      (obj.data.ptr as LCObject).data.key1.should.eql(ptr.key1);
+      (obj.data.ptr as LCObject).data.key2.should.eql(ptr.key2);
     });
 
     it('should decode GeoPoint', function () {
@@ -92,11 +94,10 @@ describe('ObjectReference', function () {
         latitude: 1.5,
         longitude: 2.5,
       };
-      const data: Record<string, unknown> = { geo };
-      LCObject.decodeAdvancedType(null, data);
-      data.geo.should.instanceOf(GeoPoint);
-      (data.geo as GeoPoint).latitude.should.eql(geo.latitude);
-      (data.geo as GeoPoint).longitude.should.eql(geo.longitude);
+      const obj = LCObject.decode({ geo }, null);
+      obj.data.geo.should.instanceOf(GeoPoint);
+      (obj.data.geo as GeoPoint).latitude.should.eql(geo.latitude);
+      (obj.data.geo as GeoPoint).longitude.should.eql(geo.longitude);
     });
 
     it('should decode data which in a sub-object', function () {
@@ -104,9 +105,9 @@ describe('ObjectReference', function () {
         __type: 'Date',
         iso: '2020-01-02T03:04:05.061Z',
       };
-      const data = { obj: { date, obj: { date } } };
-      LCObject.decodeAdvancedType(null, data);
-      [data.obj.date, data.obj.obj.date].forEach((t) => {
+      const obj = LCObject.decode({ obj: { date, obj: { date } } }, null);
+      const data = obj.data as any;
+      [(data.obj.date, data.obj.obj.date)].forEach((t) => {
         t.should.instanceOf(Date);
         ((t as unknown) as Date).toISOString().should.eql(date.iso);
       });
@@ -117,19 +118,30 @@ describe('ObjectReference', function () {
         __type: 'Date',
         iso: '2020-01-02T03:04:05.061Z',
       };
-      const data = { arr: [date, [date]] };
-      LCObject.decodeAdvancedType(null, data);
-      [data.arr[0], data.arr[1][0]].forEach((t) => {
+      const obj = LCObject.decode({ arr: [date, [date]] }, null);
+      const data = obj.data;
+      data.arr.should.Array();
+      [(data.arr[0], data.arr[1][0])].forEach((t) => {
         t.should.instanceOf(Date);
         ((t as unknown) as Date).toISOString().should.eql(date.iso);
       });
     });
+
+    it('should encode createdAt and updatedAt', function () {
+      const data: Record<string, unknown> = {
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      LCObject.decode(data, null);
+      data.createdAt.should.instanceOf(Date);
+      data.updatedAt.should.instanceOf(Date);
+    });
   });
 
-  describe('#toJSON', function () {
+  describe('#toPointer', function () {
     it('should return a Pointer', function () {
       const obj = new LCObject(null, 'Test', 'test-id');
-      const ptr = obj.toJSON();
+      const ptr = obj.toPointer();
       ptr.__type.should.eql('Pointer');
       ptr.className.should.eql(obj.className);
       ptr.objectId.should.eql(obj.objectId);
@@ -240,6 +252,43 @@ describe('ObjectReference', function () {
       const newObj = await obj.get();
       globalTestNetwork.popRequest();
       newObj.data.should.eql(data);
+    });
+  });
+
+  describe('#toJSON', function () {
+    it('should extract inner LCObject', function () {
+      const obj1 = new LCObject(null, 'Test', 'id-1');
+      const obj2 = new LCObject(null, 'Test', 'id-2');
+      const obj3 = new LCObject(null, 'Test', 'id-3');
+      obj3.data = { key3: 'value3' };
+      obj2.data = { obj3, key2: 'value2' };
+      obj1.data = { obj2, key1: 'value1' };
+      obj1.toJSON().should.eql({
+        key1: 'value1',
+        obj2: { key2: 'value2', obj3: { key3: 'value3' } },
+      });
+    });
+
+    it('should extract array of LCObject', function () {
+      const obj1 = new LCObject(null, 'Test', 'id-1');
+      const obj2 = new LCObject(null, 'Test', 'id-2');
+      obj2.data = { key2: 'value2' };
+      obj1.data = { key1: 'value1', arr: [obj2] };
+      obj1.toJSON().should.eql({
+        key1: 'value1',
+        arr: [{ key2: 'value2' }],
+      });
+    });
+
+    it('should extract kv-map of LCObject', function () {
+      const obj1 = new LCObject(null, 'Test', 'id-1');
+      const obj2 = new LCObject(null, 'Test', 'id-2');
+      obj2.data = { key2: 'value2' };
+      obj1.data = { key1: 'value1', obj: { obj2 } };
+      obj1.toJSON().should.eql({
+        key1: 'value1',
+        obj: { obj2: { key2: 'value2' } },
+      });
     });
   });
 });

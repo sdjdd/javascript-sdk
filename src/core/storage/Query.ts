@@ -332,7 +332,7 @@ export class Query {
     }
 
     return results.map((result) => {
-      LCObject.decodeAdvancedType(this.app, result);
+      LCObject.decode(result, this.app);
       const objRef = new LCObject(this.app, this.className, result.objectId);
       objRef.data = result;
       return objRef;
