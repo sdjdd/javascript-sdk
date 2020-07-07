@@ -27,24 +27,28 @@ export class LCObject implements IObject {
   objectId: string;
   data?: IObjectData;
 
-  static encodeAdvancedType(data: IObjectData): void {
-    Object.entries(data as unknown).forEach(([key, value]) => {
+  static encodeData(before: IObjectData): IObjectData {
+    const after: IObjectData = {};
+    Object.entries(before as unknown).forEach(([key, value]) => {
       if (!value) return;
 
       if (value instanceof LCObject) {
-        data[key] = value.toPointer();
+        after[key] = value.toPointer();
         return;
       }
 
       if (isDate(value)) {
-        data[key] = { __type: 'Date', iso: value.toISOString() };
+        after[key] = { __type: 'Date', iso: value.toISOString() };
         return;
       }
 
       if (typeof value === 'object') {
-        LCObject.encodeAdvancedType(value);
+        after[key] = LCObject.encodeData(value);
+      } else {
+        after[key] = value;
       }
     });
+    return after;
   }
 
   static decodeData<T>(before: T, app: App): T {
@@ -139,9 +143,8 @@ export class LCObject implements IObject {
     option?: IObjectUpdateOption
   ): Promise<LCObject> {
     removeReservedKeys(data);
-    LCObject.encodeAdvancedType(data);
     const req = this.app._makeBaseRequest('PUT', this.path);
-    req.body = data;
+    req.body = LCObject.encodeData(data);
     if (option?.include) {
       req.query.include = option.include.join(',');
     }
