@@ -23,17 +23,31 @@ export class App {
 
   _makeBaseRequest(method: string, path: string): HTTPRequest {
     const platform = PlatformSupport.getPlatform();
+    const header = {
+      'X-LC-UA': platform.name,
+      'X-LC-Id': this.info.appId,
+      'X-LC-Key': this.info.appKey,
+      'Content-Type': 'application/json',
+    };
+    if (this.sessionToken) {
+      header['X-LC-Session'] = this.sessionToken;
+    }
     return {
       method,
       path,
       baseURL: this.info.serverURL,
-      header: {
-        'X-LC-UA': platform.name,
-        'X-LC-Id': this.info.appId,
-        'X-LC-Key': this.info.appKey,
-        'Content-Type': 'application/json',
-      },
+      header,
       query: {},
     };
+  }
+
+  _set(key: string, value: string): void {
+    const platform = PlatformSupport.getPlatform();
+    platform.storage.set(this.info.appId + ':' + key, value);
+  }
+
+  _get(key: string): string {
+    const platform = PlatformSupport.getPlatform();
+    return platform.storage.get(this.info.appId + ':' + key);
   }
 }

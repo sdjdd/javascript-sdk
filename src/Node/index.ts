@@ -1,4 +1,4 @@
-import { Platform, Network } from '../core/Platform';
+import { Platform, Network, PlatformStorage } from '../core/Platform';
 import superagent from 'superagent';
 import { HTTPRequest, HTTPResponse, parseHTTPRequestURL } from '../core/http';
 
@@ -46,7 +46,28 @@ const network: Network = {
   },
 };
 
+export class MemoryStorage implements PlatformStorage {
+  map = new Map<string, string>();
+
+  set(key: string, value: string): void {
+    this.map.set(key, value);
+  }
+
+  get(key: string): string {
+    return this.map.get(key);
+  }
+
+  remove(key: string): void {
+    this.map.delete(key);
+  }
+
+  clear(): void {
+    this.map.clear();
+  }
+}
+
 export const node: Platform = {
   name: 'Node.js',
   network,
+  storage: new MemoryStorage(),
 };

@@ -331,8 +331,9 @@ export class Query {
       return [];
     }
 
-    const decoder = new ObjectDecoder(this.app, this.className);
-    return results.map((result) => decoder.decode(result));
+    return results.map((result) =>
+      ObjectDecoder.decode(result, this.className).setApp(this.app)
+    );
   }
 
   async first(): Promise<IObject> {

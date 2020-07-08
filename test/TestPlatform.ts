@@ -1,5 +1,6 @@
 import { Platform, Network, FileData, PlatformSupport } from '../src/core';
 import { HTTPRequest, HTTPResponse } from '../src/core/http';
+import { MemoryStorage } from '../src/node';
 
 export class TestNetwork implements Network {
   private _requests: HTTPRequest[] = [];
@@ -47,6 +48,7 @@ export const globalTestNetwork = new TestNetwork();
 export const globalTestPlatform: Platform = {
   name: 'test platform',
   network: globalTestNetwork,
+  storage: new MemoryStorage(),
 };
 
 export function setGlobalTestPlatform(): void {

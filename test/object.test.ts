@@ -13,7 +13,7 @@ const testApp = new App({
 describe('LCObject', function () {
   describe('#toPointer', function () {
     it('should return a Pointer', function () {
-      const obj = new LCObject(null, 'Test', 'test-id');
+      const obj = new LCObject('Test', 'test-id');
       const ptr = obj.toPointer();
       ptr.__type.should.eql('Pointer');
       ptr.className.should.eql(obj.className);
@@ -27,7 +27,7 @@ describe('LCObject', function () {
       appKey: 'test-app-key',
       serverURL: 'test-server-url',
     });
-    const obj = new LCObject(app, 'Test', 'test-object-id');
+    const obj = new LCObject('Test', 'test-object-id', app);
 
     it('should send "PUT" request', async function () {
       await obj.update({});
@@ -71,7 +71,7 @@ describe('LCObject', function () {
   });
 
   describe('#delete', function () {
-    const obj = new LCObject(testApp, 'Test', 'test-object-id');
+    const obj = new LCObject('Test', 'test-object-id', testApp);
 
     it('should send "DELETE" request', async function () {
       await obj.delete();
@@ -90,7 +90,7 @@ describe('LCObject', function () {
     before(function () {
       globalTestNetwork.setDefaultResponse({
         status: 200,
-        body: { className: 'Test', object: 'test-object-id' },
+        body: { className: 'Test', objectId: 'test-object-id' },
       });
     });
 
@@ -99,14 +99,14 @@ describe('LCObject', function () {
     });
 
     it('should send "GET" request', async function () {
-      const obj = new LCObject(testApp, 'Test', 'test-object-id');
+      const obj = new LCObject('Test', 'test-object-id', testApp);
       await obj.get();
       const req = globalTestNetwork.popRequest();
       req.method.should.eql('GET');
     });
 
     it('should set correct query when include keys', async function () {
-      const obj = new LCObject(testApp, 'Test', 'test-object-id');
+      const obj = new LCObject('Test', 'test-object-id', testApp);
       const include = ['key1', 'key2', 'key3'];
       await obj.get({ include });
       const req = globalTestNetwork.popRequest();
@@ -117,19 +117,20 @@ describe('LCObject', function () {
 
     it('should return correct reference', async function () {
       const data = {
+        objectId: 'test-object-id',
         key1: 'value1',
         key2: 'value2',
         key3: 'value3',
       };
       globalTestNetwork.pushResponse({ status: 200, body: data });
-      const obj = new LCObject(testApp, 'Test', 'test-object-id');
+      const obj = new LCObject('Test', 'test-object-id', testApp);
       const newObj = await obj.get();
       globalTestNetwork.popRequest();
       newObj.data.should.eql(data);
     });
 
     it('should fail when objectId not exists', function () {
-      const obj = new LCObject(testApp, 'Test', 'test-object-id');
+      const obj = new LCObject('Test', 'test-object-id', testApp);
       globalTestNetwork.pushResponse({ status: 200, body: {} });
       return obj
         .get()
@@ -140,9 +141,9 @@ describe('LCObject', function () {
 
   describe('#toJSON', function () {
     it('should extract inner LCObject', function () {
-      const obj1 = new LCObject(null, 'Test', 'id-1');
-      const obj2 = new LCObject(null, 'Test', 'id-2');
-      const obj3 = new LCObject(null, 'Test', 'id-3');
+      const obj1 = new LCObject('Test', 'id-1');
+      const obj2 = new LCObject('Test', 'id-2');
+      const obj3 = new LCObject('Test', 'id-3');
       obj3.data = { key3: 'value3' };
       obj2.data = { obj3, key2: 'value2' };
       obj1.data = { obj2, key1: 'value1' };
@@ -153,8 +154,8 @@ describe('LCObject', function () {
     });
 
     it('should extract data in array', function () {
-      const obj1 = new LCObject(null, 'Test', 'id-1');
-      const obj2 = new LCObject(null, 'Test', 'id-2');
+      const obj1 = new LCObject('Test', 'id-1');
+      const obj2 = new LCObject('Test', 'id-2');
       obj2.data = { key2: 'value2' };
       obj1.data = { key1: 'value1', arr: [obj2] };
       obj1.toJSON().should.eql({
@@ -164,8 +165,8 @@ describe('LCObject', function () {
     });
 
     it('should extract data in object', function () {
-      const obj1 = new LCObject(null, 'Test', 'id-1');
-      const obj2 = new LCObject(null, 'Test', 'id-2');
+      const obj1 = new LCObject('Test', 'id-1');
+      const obj2 = new LCObject('Test', 'id-2');
       obj2.data = { key2: 'value2' };
       obj1.data = { key1: 'value1', obj: { obj2 } };
       obj1.toJSON().should.eql({

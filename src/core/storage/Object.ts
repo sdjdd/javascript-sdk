@@ -1,6 +1,10 @@
 import { v4 as uuid } from 'uuid';
 import { App } from '../App';
-import { checkUluruResponse, requestToUluru } from '../utils';
+import {
+  checkUluruResponse,
+  requestToUluru,
+  removeReservedKeys,
+} from '../utils';
 import { PlatformSupport } from '../Platform';
 import {
   IObject,
@@ -13,28 +17,19 @@ import {
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './encoding';
 
-const RESERVED_KEYS = new Set(['objectId', 'createdAt', 'updatedAt']);
-function removeReservedKeys(obj: Record<string, unknown>) {
-  Object.keys(obj).forEach((key) => {
-    if (RESERVED_KEYS.has(key)) {
-      delete obj[key];
-    }
-  });
-}
-
 export class LCObject implements IObject {
   app: App;
   className: string;
   objectId: string;
   data?: IObjectData;
 
-  constructor(app: App, className: string, objectId: string) {
+  constructor(className: string, objectId: string, app?: App) {
     this.app = app;
     this.className = className;
     this.objectId = objectId;
   }
 
-  private get path(): string {
+  protected get _path(): string {
     return `/1.1/classes/${this.className}/${this.objectId}`;
   }
 
@@ -65,12 +60,31 @@ export class LCObject implements IObject {
     };
   }
 
+  setApp(app: App): this {
+    this.app = app;
+    if (this.data) {
+      const datas: unknown[] = [this.data];
+      while (datas.length > 0) {
+        const data = datas.shift();
+        Object.values(data).forEach((value) => {
+          if (value instanceof LCObject) {
+            value.app = app;
+            if (value.data) {
+              datas.push(value.data);
+            }
+          }
+        });
+      }
+    }
+    return this;
+  }
+
   async update(
     data: IObjectData,
     option?: IObjectUpdateOption
   ): Promise<IObject> {
     removeReservedKeys(data);
-    const req = this.app._makeBaseRequest('PUT', this.path);
+    const req = this.app._makeBaseRequest('PUT', this._path);
     req.body = ObjectEncoder.encodeData(data);
     if (option?.include) {
       req.query.include = option.include.join(',');
@@ -80,20 +94,20 @@ export class LCObject implements IObject {
     const res = await platform.network.request(req);
     checkUluruResponse(res);
 
-    const obj = new LCObject(this.app, this.className, this.objectId);
+    const obj = new LCObject(this.className, this.objectId, this.app);
     obj.data = res.body as IObjectData;
     return obj;
   }
 
   async delete(): Promise<void> {
-    const req = this.app._makeBaseRequest('DELETE', this.path);
+    const req = this.app._makeBaseRequest('DELETE', this._path);
     const platform = PlatformSupport.getPlatform();
     const res = await platform.network.request(req);
     checkUluruResponse(res);
   }
 
   async get(option?: IObjectGetOption): Promise<IObject> {
-    const req = this.app._makeBaseRequest('GET', this.path);
+    const req = this.app._makeBaseRequest('GET', this._path);
     if (option?.include) {
       req.query.include = option.include.join(',');
     }
@@ -104,8 +118,8 @@ export class LCObject implements IObject {
     if (Object.keys(attr).length === 0) {
       throw new Error('objectId not exists');
     }
-    const decoder = new ObjectDecoder(this.app, this.className);
-    return decoder.decode(attr);
+
+    return ObjectDecoder.decode(attr, this.className).setApp(this.app);
   }
 }
 
@@ -137,7 +151,7 @@ export class GeoPoint implements IGeoPoint {
 export class User extends LCObject implements IUser {
   sessionToken: string;
 
-  constructor(app: App, objectId: string) {
-    super(app, '_User', objectId);
+  constructor(objectId: string, app?: App) {
+    super('_User', objectId, app);
   }
 }

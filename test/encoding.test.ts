@@ -1,7 +1,7 @@
 import 'should';
 import { ObjectEncoder, ObjectDecoder } from '../src/core/storage/encoding';
 import { IPointer, IGeoPoint, IDate } from '../src/core/types';
-import { LCObject, GeoPoint, App } from '../src/core';
+import { LCObject, GeoPoint, App, User } from '../src/core';
 
 describe('ObjectEncoder', function () {
   describe('.encodeData', function () {
@@ -13,7 +13,7 @@ describe('ObjectEncoder', function () {
     });
 
     it('should encode Pointer', function () {
-      const obj = new LCObject(null, 'Test', 'test-id');
+      const obj = new LCObject('Test', 'test-id', null);
       const data = ObjectEncoder.encodeData({ obj }) as { obj: IPointer };
       data.obj.__type.should.eql('Pointer');
       data.obj.className.should.eql('Test');
@@ -61,13 +61,29 @@ describe('ObjectEncoder', function () {
       data.key.should.eql('value');
     });
   });
+
+  describe('.encode', function () {
+    it('should encode className & objectId', function () {
+      const obj = new LCObject('Test', 'test-object-id');
+      const encoded = ObjectEncoder.encode(obj);
+      encoded.className.should.eql('Test');
+      encoded.objectId.should.eql('test-object-id');
+    });
+
+    it('should encode .data', function () {
+      const obj = new LCObject('Test', 'test-object-id');
+      obj.data = { key: 'value' };
+      const encoded = ObjectEncoder.encode(obj);
+      encoded.key.should.eql('value');
+    });
+  });
 });
 
 describe('ObjectDecoder', function () {
   describe('.decodeData', function () {
     it('should decode Date', function () {
       const date: IDate = { __type: 'Date', iso: '2020-01-02T03:04:05.061Z' };
-      const data = ObjectDecoder.decodeData({ date }, null) as { date: Date };
+      const data = ObjectDecoder.decodeData({ date }) as { date: Date };
       data.date.should.instanceOf(Date);
       data.date.toISOString().should.eql(date.iso);
     });
@@ -79,15 +95,8 @@ describe('ObjectDecoder', function () {
         objectId: 'test-id',
         key: 'value',
       };
-      const appInfo = {
-        appId: 'test-app-id',
-        appKey: 'test-app-key',
-        serverURL: 'test-server-url',
-      };
-      const app = new App(appInfo);
-      const data = ObjectDecoder.decodeData({ ptr }, app) as { ptr: LCObject };
+      const data = ObjectDecoder.decodeData({ ptr }) as { ptr: LCObject };
       data.ptr.should.instanceOf(LCObject);
-      data.ptr.app.info.should.eql(appInfo);
       data.ptr.className.should.eql(ptr.className);
       data.ptr.objectId.should.eql(ptr.objectId);
       data.ptr.data.key.should.eql(ptr.key);
@@ -99,7 +108,7 @@ describe('ObjectDecoder', function () {
         latitude: 10.5,
         longitude: 20.5,
       };
-      const data = ObjectDecoder.decodeData({ geo }, null) as { geo: GeoPoint };
+      const data = ObjectDecoder.decodeData({ geo }) as { geo: GeoPoint };
       data.geo.should.instanceOf(GeoPoint);
       data.geo.latitude.should.eql(geo.latitude);
       data.geo.longitude.should.eql(geo.longitude);
@@ -107,10 +116,9 @@ describe('ObjectDecoder', function () {
 
     it('should decode data in object', function () {
       const date: IDate = { __type: 'Date', iso: '2020-01-02T03:04:05.061Z' };
-      const data = ObjectDecoder.decodeData(
-        { obj: { date, obj: { date } } },
-        null
-      ) as { obj: { date: Date; obj: { date: Date } } };
+      const data = ObjectDecoder.decodeData({
+        obj: { date, obj: { date } },
+      }) as { obj: { date: Date; obj: { date: Date } } };
       [data.obj.date, data.obj.obj.date].forEach((d) => {
         d.should.instanceOf(Date);
         d.toISOString().should.eql(date.iso);
@@ -119,7 +127,7 @@ describe('ObjectDecoder', function () {
 
     it('should decode date in array', function () {
       const date: IDate = { __type: 'Date', iso: '2020-01-02T03:04:05.061Z' };
-      const data = ObjectDecoder.decodeData({ arr: [date, [date]] }, null) as {
+      const data = ObjectDecoder.decodeData({ arr: [date, [date]] }) as {
         arr: [Date, [Date]];
       };
       [data.arr[0], data.arr[1][0]].forEach((d) => {
@@ -129,10 +137,30 @@ describe('ObjectDecoder', function () {
     });
 
     it('should keep basic value stay', function () {
-      const data = ObjectDecoder.decodeData({ key: 'value' }, null) as {
+      const data = ObjectDecoder.decodeData({ key: 'value' }) as {
         key: string;
       };
       data.key.should.eql('value');
+    });
+  });
+
+  describe('.decode', function () {
+    it('should decode className in data', function () {
+      const data = { className: 'Test', objectId: 'test-object-id' };
+      const obj = ObjectDecoder.decode(data);
+      obj.className.should.eql('Test');
+    });
+
+    it('should use given className', function () {
+      const data = { className: 'Aha', objectId: 'test-object-id' };
+      const obj = ObjectDecoder.decode(data, 'Test');
+      obj.className.should.eql('Test');
+    });
+
+    it('should return an User when className is "_User"', function () {
+      const data = { className: '_User', objectId: 'test-object-id' };
+      const obj = ObjectDecoder.decode(data);
+      obj.should.instanceOf(User);
     });
   });
 });

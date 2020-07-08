@@ -9,10 +9,8 @@ describe('App', function () {
         appKey: 'test-app-key',
         serverURL: 'test-server-url',
       };
-      const name = 'test-app-name';
-      const app = new App({ ...appInfo, name });
+      const app = new App(appInfo);
       app.info.should.eql(appInfo);
-      app.name.should.eql(name);
     });
   });
 

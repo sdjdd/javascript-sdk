@@ -29,6 +29,12 @@ export interface IObjectGetOption {
   include?: string[];
 }
 
+export interface IACL {
+  allow(subject: '*' | string, action: 'read' | 'write'): this;
+  deny(subject: '*' | string, action: 'read' | 'write'): this;
+  can(subject: '*' | string, action: 'read' | 'write'): boolean;
+}
+
 export interface IObject {
   className: string;
   objectId: string;

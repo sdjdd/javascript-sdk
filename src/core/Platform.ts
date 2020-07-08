@@ -20,9 +20,17 @@ export interface Network {
   upload: Upload;
 }
 
+export interface PlatformStorage {
+  set(key: string, value: string): void;
+  get(key: string): string;
+  remove(key: string): void;
+  clear(): void;
+}
+
 export interface Platform {
   name: string;
   network: Network;
+  storage: PlatformStorage;
 }
 
 export class PlatformSupport {

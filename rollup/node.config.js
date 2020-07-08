@@ -5,7 +5,7 @@ import replace from '@rollup/plugin-replace';
 import json from '@rollup/plugin-json';
 
 export default {
-  input: 'src/Node/index.ts',
+  input: 'src/node/index.ts',
   output: [
     {
       file: 'dist/node/index.js',
