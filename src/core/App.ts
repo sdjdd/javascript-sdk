@@ -1,30 +1,17 @@
 import { PlatformSupport } from './Platform';
 import { HTTPRequest } from './http';
-
-export interface AppConfig {
-  appId: string;
-  appKey: string;
-  serverURL: string;
-  name?: string;
-}
-
-export interface AppInfo {
-  appId: string;
-  appKey: string;
-  serverURL: string;
-}
+import { IAppInfo } from './types';
 
 export class App {
-  name: string;
-  info: AppInfo;
+  info: IAppInfo;
+  sessionToken: string;
 
-  constructor(config?: AppConfig) {
+  constructor(config?: IAppInfo) {
     this.info = {
       appId: config?.appId,
       appKey: config?.appKey,
       serverURL: config?.serverURL,
     };
-    this.name = config?.name || '[DEFAULT]';
   }
 
   get initialized(): boolean {

@@ -1,4 +1,4 @@
-import { Class } from './Class';
+import { Class, UserClass } from './Class';
 import { FileUploader, QiniuFileProvider } from '../FileUploader';
 import { File } from './Object';
 import { App } from '../App';
@@ -12,6 +12,10 @@ export class Storage {
 
   class(name: string): IClass {
     return new Class(this.app, name);
+  }
+
+  user(): UserClass {
+    return new UserClass(this.app);
   }
 
   batch(): Batch {

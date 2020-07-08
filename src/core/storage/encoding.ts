@@ -1,4 +1,4 @@
-import { LCObject, GeoPoint } from './Object';
+import { LCObject, GeoPoint, User } from './Object';
 import { IObjectData, IObject, IDate } from '../types';
 import { isDate } from '../utils';
 import { App } from '../App';
@@ -79,7 +79,27 @@ export class ObjectDecoder {
   }
 
   static decode(data: IObjectData, app: App, className?: string): IObject {
-    const obj = new LCObject(app, className ?? data.className, data.objectId);
+    if (!data.objectId) {
+      throw new Error('The objectId must be provided');
+    }
+    if (!className) {
+      if (!data.className) {
+        throw new Error(
+          'The data must contain className when className parameter is undefined'
+        );
+      }
+      className = data.className;
+    }
+
+    let obj: IObject;
+    switch (className) {
+      case '_User':
+        obj = new User(app, data.objectId);
+        break;
+
+      default:
+        obj = new LCObject(app, className, data.objectId);
+    }
 
     const _data = { ...data };
     ['__type', 'className', 'createdAt', 'updatedAt', 'ACL'].forEach(

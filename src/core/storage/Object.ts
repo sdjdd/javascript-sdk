@@ -9,6 +9,7 @@ import {
   IObjectData,
   IObjectGetOption,
   IObjectUpdateOption,
+  IUser,
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './encoding';
 
@@ -103,7 +104,7 @@ export class LCObject implements IObject {
     if (Object.keys(attr).length === 0) {
       throw new Error('objectId not exists');
     }
-    const decoder = new ObjectDecoder(this.app);
+    const decoder = new ObjectDecoder(this.app, this.className);
     return decoder.decode(attr);
   }
 }
@@ -131,4 +132,12 @@ export class File {
 export class GeoPoint implements IGeoPoint {
   __type: 'GeoPoint' = 'GeoPoint';
   constructor(public latitude: number, public longitude: number) {}
+}
+
+export class User extends LCObject implements IUser {
+  sessionToken: string;
+
+  constructor(app: App, objectId: string) {
+    super(app, '_User', objectId);
+  }
 }

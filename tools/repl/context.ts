@@ -5,6 +5,7 @@ import { node } from '../../src/Node';
 export { env };
 export {
   App,
+  app,
   Storage,
   ACL,
   storage,
@@ -18,7 +19,6 @@ export { ObjectDecoder, ObjectEncoder } from '../../src/core/storage/encoding';
 PlatformSupport.setPlatform(node);
 
 init({
-  name: 'REPL APP',
   appId: env.appId,
   appKey: env.appKey,
   serverURL: env.serverURL,

@@ -18,9 +18,9 @@ export function checkUluruResponse(res: HTTPResponse): void {
 export async function requestToUluru(req: HTTPRequest): Promise<HTTPResponse> {
   const platform = PlatformSupport.getPlatform();
   const res = await platform.network.request(req);
-  checkUluruResponse(res);
   if (typeof res.body === 'string') {
     res.body = JSON.parse(res.body);
   }
+  checkUluruResponse(res);
   return res;
 }

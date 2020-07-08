@@ -1,4 +1,5 @@
-import { App, AppConfig } from './App';
+import { App } from './App';
+import { IAppInfo } from './types';
 
 export const defaultApp = new App({
   appId: '',
@@ -6,6 +7,6 @@ export const defaultApp = new App({
   serverURL: '',
 });
 
-export function init(config: AppConfig): void {
+export function init(config: IAppInfo): void {
   defaultApp.info = config;
 }
