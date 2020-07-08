@@ -5,11 +5,12 @@ import { App } from '../App';
 import { HTTPResponse } from '../http';
 import { defaultApp } from '../global';
 import { Batch } from './Batch';
+import { IClass } from '../types';
 
 export class Storage {
   constructor(public app: App) {}
 
-  class(name: string): Class {
+  class(name: string): IClass {
     return new Class(this.app, name);
   }
 

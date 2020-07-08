@@ -1,7 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import { App } from '../App';
-import { isDate, checkUluruResponse } from '../utils';
-import { ACL, ACLPrivilege } from './ACL';
+import { checkUluruResponse, requestToUluru } from '../utils';
 import { PlatformSupport } from '../Platform';
 import {
   IObject,
@@ -11,6 +10,7 @@ import {
   IObjectGetOption,
   IObjectUpdateOption,
 } from '../types';
+import { ObjectEncoder, ObjectDecoder } from './encoding';
 
 const RESERVED_KEYS = new Set(['objectId', 'createdAt', 'updatedAt']);
 function removeReservedKeys(obj: Record<string, unknown>) {
@@ -26,80 +26,6 @@ export class LCObject implements IObject {
   className: string;
   objectId: string;
   data?: IObjectData;
-
-  static encodeData(before: IObjectData): IObjectData {
-    const after: IObjectData = {};
-    Object.entries(before as unknown).forEach(([key, value]) => {
-      if (!value) return;
-
-      if (value instanceof LCObject) {
-        after[key] = value.toPointer();
-        return;
-      }
-
-      if (isDate(value)) {
-        after[key] = { __type: 'Date', iso: value.toISOString() };
-        return;
-      }
-
-      if (typeof value === 'object') {
-        after[key] = LCObject.encodeData(value);
-      } else {
-        after[key] = value;
-      }
-    });
-    return after;
-  }
-
-  static decodeData<T>(before: T, app: App): T {
-    const after = (Array.isArray(before) ? [] : {}) as T;
-    Object.entries(before as unknown).forEach(([key, value]) => {
-      if (!value) return;
-
-      switch (value.__type) {
-        case 'Date':
-          after[key] = new Date(value.iso);
-          return;
-
-        case 'Pointer': {
-          after[key] = LCObject.decode(value, app);
-          return;
-        }
-
-        case 'GeoPoint':
-          after[key] = new GeoPoint(value.latitude, value.longitude);
-          return;
-      }
-
-      if (typeof value === 'object') {
-        after[key] = LCObject.decodeData(value, app);
-      } else {
-        after[key] = value;
-      }
-    });
-    return after;
-  }
-
-  static decode(data: IObjectData, app: App, className?: string): LCObject {
-    const obj = new LCObject(app, className ?? data.className, data.objectId);
-
-    const _data = { ...data };
-    ['__type', 'className', 'createdAt', 'updatedAt', 'ACL'].forEach(
-      (key) => delete _data[key]
-    );
-    obj.data = LCObject.decodeData(_data, app);
-
-    if (data.createdAt) {
-      obj.data.createdAt = new Date(data.createdAt);
-    }
-    if (data.updatedAt) {
-      obj.data.updatedAt = new Date(data.updatedAt);
-    }
-    if (data.ACL) {
-      obj.data.ACL = ACL.from(data.ACL as Record<string, ACLPrivilege>);
-    }
-    return obj;
-  }
 
   constructor(app: App, className: string, objectId: string) {
     this.app = app;
@@ -141,10 +67,10 @@ export class LCObject implements IObject {
   async update(
     data: IObjectData,
     option?: IObjectUpdateOption
-  ): Promise<LCObject> {
+  ): Promise<IObject> {
     removeReservedKeys(data);
     const req = this.app._makeBaseRequest('PUT', this.path);
-    req.body = LCObject.encodeData(data);
+    req.body = ObjectEncoder.encodeData(data);
     if (option?.include) {
       req.query.include = option.include.join(',');
     }
@@ -165,18 +91,20 @@ export class LCObject implements IObject {
     checkUluruResponse(res);
   }
 
-  async get(option?: IObjectGetOption): Promise<LCObject> {
+  async get(option?: IObjectGetOption): Promise<IObject> {
     const req = this.app._makeBaseRequest('GET', this.path);
     if (option?.include) {
       req.query.include = option.include.join(',');
     }
 
-    const platform = PlatformSupport.getPlatform();
-    const res = await platform.network.request(req);
-    checkUluruResponse(res);
+    const res = await requestToUluru(req);
 
     const attr = res.body as IObjectData;
-    return LCObject.decode(attr, this.app);
+    if (Object.keys(attr).length === 0) {
+      throw new Error('objectId not exists');
+    }
+    const decoder = new ObjectDecoder(this.app);
+    return decoder.decode(attr);
   }
 }
 

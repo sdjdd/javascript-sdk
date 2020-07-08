@@ -13,6 +13,8 @@ export {
   LCObject,
 } from '../../src/core';
 
+export { ObjectDecoder, ObjectEncoder } from '../../src/core/storage/encoding';
+
 PlatformSupport.setPlatform(node);
 
 init({

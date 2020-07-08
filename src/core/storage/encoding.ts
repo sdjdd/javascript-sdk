@@ -27,7 +27,7 @@ export class ObjectEncoder {
       }
 
       if (typeof value === 'object') {
-        encoded[key] = ObjectEncoder.encodeData(value as IObjectData);
+        encoded[key] = ObjectEncoder.encodeData(value);
       } else {
         encoded[key] = value;
       }
@@ -78,7 +78,7 @@ export class ObjectDecoder {
     return decoded;
   }
 
-  static decode(data: IObjectData, app: App, className?: string): unknown {
+  static decode(data: IObjectData, app: App, className?: string): IObject {
     const obj = new LCObject(app, className ?? data.className, data.objectId);
 
     const _data = { ...data };
@@ -104,7 +104,7 @@ export class ObjectDecoder {
     return ObjectDecoder.decodeData(data, this.app);
   }
 
-  decode(data: IObjectData): unknown {
+  decode(data: IObjectData): IObject {
     return ObjectDecoder.decode(data, this.app, this.className);
   }
 }

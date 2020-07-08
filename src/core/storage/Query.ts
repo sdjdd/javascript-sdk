@@ -1,9 +1,9 @@
 import { App } from '../App';
-import { LCObject } from './Object';
 import { PlatformSupport } from '../Platform';
 import { isRegExp } from '../utils';
 import { HTTPRequest } from '../http';
-import { IObjectData } from '../types';
+import { IObjectData, IObject } from '../types';
+import { ObjectDecoder } from './encoding';
 
 export type Condition =
   | '=='
@@ -317,7 +317,7 @@ export class Query {
     return req;
   }
 
-  async find(): Promise<LCObject[]> {
+  async find(): Promise<IObject[]> {
     const req = this._makeRequest();
 
     const platform = PlatformSupport.getPlatform();
@@ -331,11 +331,14 @@ export class Query {
       return [];
     }
 
-    return results.map((result) => {
-      LCObject.decode(result, this.app);
-      const objRef = new LCObject(this.app, this.className, result.objectId);
-      objRef.data = result;
-      return objRef;
-    });
+    return results.map((result) => ObjectDecoder.decode(result, this.app));
+  }
+
+  async first(): Promise<IObject> {
+    const results = await this.limit(1).find();
+    if (results.length === 0) {
+      return void 0;
+    }
+    return results[0];
   }
 }
