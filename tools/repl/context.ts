@@ -11,7 +11,6 @@ export {
   Operation,
   Query,
   LCObject,
-  auth,
 } from '../../src/core';
 
 PlatformSupport.setPlatform(node);

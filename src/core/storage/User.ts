@@ -1,27 +1,14 @@
-import { IUserData, IUser } from '../types';
+import { Class } from './Class';
+import { IUser, IUserData } from '../types';
 import { App } from '../App';
 import { PlatformSupport } from '../Platform';
-import { User } from './User';
-import { defaultApp } from '../global';
+import { LCObject } from './Object';
 
-export class Auth {
-  app: App;
-  currentUser: User;
+export class UserClass extends Class {
+  currentUser: IUser;
 
   constructor(app: App) {
-    this.app = app;
-  }
-
-  async add(data: IUserData): Promise<IUser> {
-    const req = this.app._makeBaseRequest('POST', '/1.1/users');
-    req.body = data;
-    const platform = PlatformSupport.getPlatform();
-    const res = await platform.network.request(req);
-
-    const attr = res.body as IUserData;
-    const user = new User(this.app, attr.objectId);
-    user.data = attr;
-    return user;
+    super(app, '_User');
   }
 
   async logIn(username: string, password: string): Promise<IUser> {
@@ -39,4 +26,10 @@ export class Auth {
   }
 }
 
-export const auth = new Auth(defaultApp);
+export class User extends LCObject implements IUser {
+  sessionToken: string;
+
+  constructor(app: App, objectId: string) {
+    super(app, '_User', objectId);
+  }
+}
