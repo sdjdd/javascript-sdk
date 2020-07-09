@@ -2,6 +2,12 @@ export interface IAppInfo {
   appId: string;
   appKey: string;
   serverURL: string;
+  masterKey?: string;
+}
+
+export interface IAuthOption {
+  sessionToken?: string;
+  useMasterKey?: boolean;
 }
 
 export interface IClassAddOption {
@@ -21,8 +27,10 @@ export interface IObjectData {
   [key: string]: unknown;
 }
 
-export interface IObjectUpdateOption {
+export interface IObjectUpdateOption extends IAuthOption {
+  keys?: string[];
   include?: string[];
+  includeACL?: boolean; // returnACL
 }
 
 export interface IObjectGetOption {
@@ -40,7 +48,7 @@ export interface IObject {
   objectId: string;
   data?: IObjectData;
   update(data: IObjectData, option?: IObjectUpdateOption): Promise<IObject>;
-  delete(): Promise<void>;
+  delete(option?: IAuthOption): Promise<void>;
   get(option?: IObjectGetOption): Promise<IObject>;
 }
 
@@ -74,4 +82,18 @@ export interface IUserData extends IObjectData {
 
 export interface IUser extends IObject {
   sessionToken?: string;
+}
+
+export interface IUserLoginWithAuthDataOption {
+  failOnNotExist?: boolean;
+}
+
+export interface IUserLoginWithAuthDataAndUnionIdOption
+  extends IUserLoginWithAuthDataOption {
+  unionIdPlatform?: string;
+  asMainAccount?: boolean;
+}
+
+export interface IAuthDataWithCaptchaToken extends IAuthOption {
+  validateToken?: string;
 }

@@ -1,6 +1,6 @@
 import { PlatformSupport, Platform } from './Platform';
 import { HTTPRequest, HTTPResponse } from './http';
-import { IAppInfo } from './types';
+import { IAppInfo, IAuthOption } from './types';
 
 export const KEY_CURRENT_USER = 'current-user';
 
@@ -9,6 +9,7 @@ export class App {
   platform: Platform;
 
   private _sessionToken: string;
+  private _useMasterKey: boolean;
 
   constructor(config?: IAppInfo) {
     this.info = {
@@ -24,6 +25,13 @@ export class App {
       return true;
     }
     return false;
+  }
+
+  useMasterKey(enable: boolean): void {
+    if (enable && !this.info.masterKey) {
+      throw new Error('The masterKey is not provided');
+    }
+    this._useMasterKey = enable;
   }
 
   getSessionToken(): string {
@@ -47,18 +55,33 @@ export class App {
     return this.platform.network.request(req);
   }
 
-  async _requestToUluru(req: Partial<HTTPRequest>): Promise<HTTPResponse> {
+  async _requestToUluru(
+    req: Partial<HTTPRequest>,
+    option?: IAuthOption
+  ): Promise<HTTPResponse> {
     req.baseURL = this.info.serverURL;
 
     if (!req.header) {
       req.header = {};
     }
+    req.header['Content-Type'] = 'application/json';
     req.header['X-LC-UA'] = this.platform.name;
     req.header['X-LC-Id'] = this.info.appId;
-    req.header['X-LC-Key'] = this.info.appKey;
-    req.header['Content-Type'] = 'application/json';
 
-    const sessionToken = this.getSessionToken();
+    const useMasterKey =
+      option?.useMasterKey !== undefined
+        ? option?.useMasterKey
+        : this._useMasterKey;
+    if (useMasterKey) {
+      if (!this.info.masterKey) {
+        throw new Error('The masterKey is not provided');
+      }
+      req.header['X-LC-Key'] = this.info.masterKey + ',master';
+    } else {
+      req.header['X-LC-Key'] = this.info.appKey;
+    }
+
+    const sessionToken = option?.sessionToken || this.getSessionToken();
     if (sessionToken) {
       req.header['X-LC-Session'] = sessionToken;
     }
@@ -76,12 +99,14 @@ export class App {
   }
 
   _kvSet(key: string, value: string): void {
-    const platform = PlatformSupport.getPlatform();
-    platform.storage.set(this.info.appId + ':' + key, value);
+    this.platform.storage.set(this.info.appId + ':' + key, value);
   }
 
   _kvGet(key: string): string {
-    const platform = PlatformSupport.getPlatform();
-    return platform.storage.get(this.info.appId + ':' + key);
+    return this.platform.storage.get(this.info.appId + ':' + key);
+  }
+
+  _kvRemove(key: string): void {
+    this.platform.storage.remove(this.info.appId + ':' + key);
   }
 }

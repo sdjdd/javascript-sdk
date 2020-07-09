@@ -1,7 +1,7 @@
 import { HTTPRequest, HTTPResponse } from './http';
 
 export interface IRequestOption {
-  signal: AbortSignal;
+  signal: { onabort(): void };
 }
 
 export type Request = (

@@ -9,6 +9,7 @@ import {
   IObjectGetOption,
   IObjectUpdateOption,
   IUser,
+  IAuthOption,
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './encoding';
 import { HTTPRequest } from '../http';
@@ -98,8 +99,11 @@ export class LCObject implements IObject {
     return obj;
   }
 
-  async delete(): Promise<void> {
-    await this.app._requestToUluru({ method: 'DELETE', path: this._path });
+  async delete(option?: IAuthOption): Promise<void> {
+    await this.app._requestToUluru(
+      { method: 'DELETE', path: this._path },
+      option
+    );
   }
 
   async get(option?: IObjectGetOption): Promise<IObject> {
@@ -149,9 +153,54 @@ export class GeoPoint implements IGeoPoint {
 }
 
 export class User extends LCObject implements IUser {
-  sessionToken: string;
-
   constructor(objectId: string, app?: App) {
     super('_User', objectId, app);
+  }
+
+  get sessionToken(): string {
+    return this.data.sessionToken as string;
+  }
+
+  isAnonymous(): boolean {
+    if (!this.data) {
+      return false;
+    }
+    if (!this.data.authData) {
+      return false;
+    }
+    const authData = this.data.authData as { anonymous: string };
+    return authData.anonymous !== undefined;
+  }
+
+  async isAuthenticated(): Promise<boolean> {
+    try {
+      await this.app._requestToUluru({
+        method: 'GET',
+        path: this._path + '/me',
+        header: { 'X-LC-Session': this.sessionToken },
+      });
+      return true;
+    } catch (err) {
+      return false; // TODO: check error code
+    }
+  }
+
+  async updatePassword(
+    oldPassword: string,
+    newPassword: string,
+    option?: IAuthOption
+  ): Promise<void> {
+    await this.app._requestToUluru(
+      {
+        method: 'PUT',
+        path: this._path + '/' + this.objectId + '/updatePassword',
+        header: { 'X-LC-Session': this.sessionToken },
+        body: {
+          old_password: oldPassword,
+          new_password: newPassword,
+        },
+      },
+      option
+    );
   }
 }
