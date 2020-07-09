@@ -3,7 +3,6 @@ import { FileUploader, QiniuFileProvider } from '../FileUploader';
 import { File } from './Object';
 import { App } from '../App';
 import { HTTPResponse } from '../http';
-import { defaultApp } from '../global';
 import { Batch } from './Batch';
 import { IClass } from '../types';
 
@@ -57,5 +56,3 @@ export class Storage {
   //   return res;
   // }
 }
-
-export const storage = new Storage(defaultApp);

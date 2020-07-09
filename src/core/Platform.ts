@@ -20,7 +20,7 @@ export interface Network {
   upload: Upload;
 }
 
-export interface PlatformStorage {
+export interface KVStorage {
   set(key: string, value: string): void;
   get(key: string): string;
   remove(key: string): void;
@@ -30,7 +30,7 @@ export interface PlatformStorage {
 export interface Platform {
   name: string;
   network: Network;
-  storage: PlatformStorage;
+  storage: KVStorage;
 }
 
 export class PlatformSupport {

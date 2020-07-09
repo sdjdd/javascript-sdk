@@ -1,11 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import { App } from '../App';
-import {
-  checkUluruResponse,
-  requestToUluru,
-  removeReservedKeys,
-} from '../utils';
-import { PlatformSupport } from '../Platform';
+import { removeReservedKeys } from '../utils';
 import {
   IObject,
   IGeoPoint,
@@ -16,6 +11,7 @@ import {
   IUser,
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './encoding';
+import { HTTPRequest } from '../http';
 
 export class LCObject implements IObject {
   app: App;
@@ -84,15 +80,18 @@ export class LCObject implements IObject {
     option?: IObjectUpdateOption
   ): Promise<IObject> {
     removeReservedKeys(data);
-    const req = this.app._makeBaseRequest('PUT', this._path);
-    req.body = ObjectEncoder.encodeData(data);
+
+    const query: HTTPRequest['query'] = {};
     if (option?.include) {
-      req.query.include = option.include.join(',');
+      query.include = option.include.join(',');
     }
 
-    const platform = PlatformSupport.getPlatform();
-    const res = await platform.network.request(req);
-    checkUluruResponse(res);
+    const res = await this.app._requestToUluru({
+      method: 'PUT',
+      path: this._path,
+      body: ObjectEncoder.encodeData(data),
+      query,
+    });
 
     const obj = new LCObject(this.className, this.objectId, this.app);
     obj.data = res.body as IObjectData;
@@ -100,19 +99,20 @@ export class LCObject implements IObject {
   }
 
   async delete(): Promise<void> {
-    const req = this.app._makeBaseRequest('DELETE', this._path);
-    const platform = PlatformSupport.getPlatform();
-    const res = await platform.network.request(req);
-    checkUluruResponse(res);
+    await this.app._requestToUluru({ method: 'DELETE', path: this._path });
   }
 
   async get(option?: IObjectGetOption): Promise<IObject> {
-    const req = this.app._makeBaseRequest('GET', this._path);
+    const query: HTTPRequest['query'] = {};
     if (option?.include) {
-      req.query.include = option.include.join(',');
+      query.include = option.include.join(',');
     }
 
-    const res = await requestToUluru(req);
+    const res = await this.app._requestToUluru({
+      method: 'GET',
+      path: this._path,
+      query,
+    });
 
     const attr = res.body as IObjectData;
     if (Object.keys(attr).length === 0) {

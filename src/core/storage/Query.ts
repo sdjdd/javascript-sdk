@@ -1,5 +1,4 @@
 import { App } from '../App';
-import { PlatformSupport } from '../Platform';
 import { isRegExp } from '../utils';
 import { HTTPRequest } from '../http';
 import { IObjectData, IObject } from '../types';
@@ -264,8 +263,7 @@ export class Query {
     req.query.count = '1';
     req.query.limit = '0';
 
-    const platform = PlatformSupport.getPlatform();
-    const res = await platform.network.request(req);
+    const res = await this.app._requestToUluru(req);
 
     return (res.body as { count: number }).count;
   }
@@ -291,11 +289,11 @@ export class Query {
     }
   }
 
-  _makeRequest(): HTTPRequest {
-    const req = this.app._makeBaseRequest(
-      'GET',
-      `/1.1/classes/${this.className}`
-    );
+  _makeRequest(): Partial<HTTPRequest> {
+    const req: Partial<HTTPRequest> = {
+      method: 'GET',
+      path: `/1.1/classes/${this.className}`,
+    };
     const where = JSON.stringify(this._parseWhere());
     if (where != '{}') {
       req.query = { where };
@@ -320,13 +318,9 @@ export class Query {
   async find(): Promise<IObject[]> {
     const req = this._makeRequest();
 
-    const platform = PlatformSupport.getPlatform();
-    const res = await platform.network.request(req);
+    const res = await this.app._requestToUluru(req);
 
-    const results = (res.body as {
-      results: IObjectData[];
-    }).results;
-
+    const results = (res.body as { results: IObjectData[] }).results;
     if (!results) {
       return [];
     }

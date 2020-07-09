@@ -1,8 +1,6 @@
 import { LCObject } from './Object';
 import { Query } from './Query';
-import { App } from '../App';
-import { PlatformSupport } from '../Platform';
-import { checkUluruResponse } from '../utils';
+import { App, KEY_CURRENT_USER } from '../App';
 import {
   IObjectData,
   IClass,
@@ -12,6 +10,7 @@ import {
   IUserData,
 } from '../types';
 import { ObjectDecoder, ObjectEncoder } from './encoding';
+import { HTTPRequest } from '../http';
 
 export class Class extends Query implements IClass {
   app: App;
@@ -25,15 +24,16 @@ export class Class extends Query implements IClass {
   }
 
   async add(data: IObjectData, option?: IClassAddOption): Promise<IObject> {
-    const req = this.app._makeBaseRequest('POST', this._path);
-    req.body = data;
+    const query: HTTPRequest['query'] = {};
     if (option?.fetch) {
-      req.query.fetchWhenSave = 'true';
+      query.fetchWhenSave = 'true';
     }
-
-    const platform = PlatformSupport.getPlatform();
-    const res = await platform.network.request(req);
-    checkUluruResponse(res);
+    const res = await this.app._requestToUluru({
+      method: 'POST',
+      path: this._path,
+      body: data,
+      query,
+    });
 
     const _data = res.body as IObjectData;
     return ObjectDecoder.decode(_data, this.className).setApp(this.app);
@@ -53,29 +53,29 @@ export class UserClass extends Class {
 
   current(): IUser {
     if (!this._currentUser) {
-      const str = this.app._get('currentUser');
-      if (str) {
-        this._currentUser = ObjectDecoder.decode(JSON.parse(str)).setApp(
-          this.app
-        );
+      const userStr = this.app._kvGet(KEY_CURRENT_USER);
+      if (userStr) {
+        const user = ObjectDecoder.decode(JSON.parse(userStr));
+        this._currentUser = user.setApp(this.app);
       }
     }
     return this._currentUser;
   }
 
   async logIn(username: string, password: string): Promise<IUser> {
-    const req = this.app._makeBaseRequest('POST', '/1.1/login');
-    req.body = { username, password };
-
-    const platform = PlatformSupport.getPlatform();
-    const res = await platform.network.request(req);
+    const res = await this.app._requestToUluru({
+      method: 'POST',
+      path: '/1.1/login',
+      body: { username, password },
+    });
 
     const data = res.body as IUserData;
     const user = ObjectDecoder.decode(data, this.className).setApp(this.app);
 
     this._currentUser = user;
-    this.app._set('currentUser', JSON.stringify(ObjectEncoder.encode(user)));
-    this.app.sessionToken = user.data.sessionToken as string;
+    const userStr = JSON.stringify(ObjectEncoder.encode(user));
+    this.app._kvSet(KEY_CURRENT_USER, userStr);
+    this.app.setSessionToken(user.data.sessionToken as string);
 
     return user;
   }

@@ -25,7 +25,10 @@ const network: Network = {
       return {
         status: err.status as number,
         header: err.response.headers as Record<string, string | string[]>,
-        body: err.response.text,
+        body:
+          Object.keys(err.response.body).length === 0
+            ? err.response.text
+            : err.response.body,
       };
     }
   },
