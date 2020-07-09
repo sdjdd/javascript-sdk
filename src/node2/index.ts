@@ -1,13 +1,18 @@
-import { Platform, Network, PlatformStorage } from '../core/Platform';
+import { Platform, Network, KVStorage } from '../core/Platform';
 import superagent from 'superagent';
 import { HTTPRequest, HTTPResponse, parseHTTPRequestURL } from '../core/http';
 
 const network: Network = {
   async request(req: HTTPRequest): Promise<HTTPResponse> {
     try {
-      const res = await superagent(req.method, parseHTTPRequestURL(req))
-        .set(req.header)
-        .send(req.body as string);
+      const superReq = superagent(req.method, parseHTTPRequestURL(req));
+      if (req.header) {
+        superReq.set(req.header);
+      }
+      if (req.body) {
+        superReq.send(req.body as string | Record<string, unknown>);
+      }
+      const res = await superReq;
       return {
         status: res.status,
         header: res.header,
@@ -46,7 +51,7 @@ const network: Network = {
   },
 };
 
-export class MemoryStorage implements PlatformStorage {
+export class MemoryStorage implements KVStorage {
   map = new Map<string, string>();
 
   set(key: string, value: string): void {
