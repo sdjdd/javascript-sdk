@@ -175,4 +175,23 @@ describe('LCObject', function () {
       });
     });
   });
+
+  describe('#setApp', function () {
+    it('should set app for itself', function () {
+      const obj = new LCObject('Test', 'test-object-id');
+      obj.setApp(testApp);
+      obj.app.info.should.eql(testApp.info);
+    });
+
+    it('should set app for inner object', function () {
+      const obj1 = new LCObject('Test', 'test-object-1');
+      const obj2 = new LCObject('Test', 'test-object-2');
+      const obj3 = new LCObject('Test', 'test-object-3');
+      obj1.data = { obj2 };
+      obj2.data = { obj3 };
+      obj1.setApp(testApp);
+      obj2.app.info.should.eql(testApp.info);
+      obj3.app.info.should.eql(testApp.info);
+    });
+  });
 });

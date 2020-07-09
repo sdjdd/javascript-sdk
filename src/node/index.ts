@@ -1,9 +1,12 @@
-import { Platform, Network, KVStorage } from '../core/Platform';
+import { Platform, Network, KVStorage, IRequestOption } from '../core/Platform';
 import superagent from 'superagent';
 import { HTTPRequest, HTTPResponse, parseHTTPRequestURL } from '../core/http';
 
 const network: Network = {
-  async request(req: HTTPRequest): Promise<HTTPResponse> {
+  async request(
+    req: HTTPRequest,
+    option?: IRequestOption
+  ): Promise<HTTPResponse> {
     try {
       const superReq = superagent(req.method, parseHTTPRequestURL(req));
       if (req.header) {
@@ -12,6 +15,11 @@ const network: Network = {
       if (req.body) {
         superReq.send(req.body as string | Record<string, unknown>);
       }
+
+      if (option?.signal) {
+        option.signal.onabort = superReq.abort;
+      }
+
       const res = await superReq;
       return {
         status: res.status,

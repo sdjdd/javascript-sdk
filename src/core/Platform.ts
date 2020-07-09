@@ -1,6 +1,13 @@
 import { HTTPRequest, HTTPResponse } from './http';
 
-export type Request = (req: HTTPRequest) => Promise<HTTPResponse>;
+export interface IRequestOption {
+  signal: AbortSignal;
+}
+
+export type Request = (
+  req: HTTPRequest,
+  option?: IRequestOption
+) => Promise<HTTPResponse>;
 
 export interface FileData {
   field: string;
