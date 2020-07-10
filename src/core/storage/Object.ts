@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import { App } from '../App';
-import { removeReservedKeys, UluruError } from '../utils';
+import { removeReservedKeys, UluruError, HTTPRequest } from '../utils';
 import {
   IObject,
   IGeoPoint,
@@ -12,7 +12,6 @@ import {
   IAuthOption,
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './encoding';
-import { HTTPRequest } from '../http';
 import { UserClass } from './Class';
 
 export class LCObject implements IObject {
@@ -83,17 +82,15 @@ export class LCObject implements IObject {
   ): Promise<IObject> {
     removeReservedKeys(data);
 
-    const query: HTTPRequest['query'] = {};
-    if (option?.include) {
-      query.include = option.include.join(',');
-    }
-
-    const res = await this.app._requestToUluru({
+    const req = new HTTPRequest({
       method: 'PUT',
       path: this._path,
       body: ObjectEncoder.encodeData(data),
-      query,
     });
+    if (option?.include) {
+      req.query.include = option.include.join(',');
+    }
+    const res = await this.app._requestToUluru(req);
 
     const obj = new LCObject(this.className, this.objectId, this.app);
     obj.data = res.body as IObjectData;
@@ -101,23 +98,16 @@ export class LCObject implements IObject {
   }
 
   async delete(option?: IAuthOption): Promise<void> {
-    await this.app._requestToUluru(
-      { method: 'DELETE', path: this._path },
-      option
-    );
+    const req = new HTTPRequest({ method: 'DELETE', path: this._path });
+    await this.app._requestToUluru(req, option);
   }
 
   async get(option?: IObjectGetOption): Promise<IObject> {
-    const query: HTTPRequest['query'] = {};
+    const req = new HTTPRequest({ path: this._path });
     if (option?.include) {
-      query.include = option.include.join(',');
+      req.query.include = option.include.join(',');
     }
-
-    const res = await this.app._requestToUluru({
-      method: 'GET',
-      path: this._path,
-      query,
-    });
+    const res = await this.app._requestToUluru(req);
 
     const attr = res.body as IObjectData;
     if (Object.keys(attr).length === 0) {
@@ -175,17 +165,14 @@ export class User extends LCObject implements IUser {
 
   async isAuthenticated(): Promise<boolean> {
     try {
-      await this.app._requestToUluru({
-        method: 'GET',
-        path: '/1.1/users/me',
-        header: { 'X-LC-Session': this.sessionToken },
-      });
+      const req = new HTTPRequest({ path: '/1.1/users/me' });
+      await this.app._requestToUluru(req, { sessionToken: this.sessionToken });
       return true;
     } catch (err) {
       if ((err as UluruError).code !== 211) {
         throw err;
       }
-      return false; // TODO: check error code
+      return false;
     }
   }
 
@@ -194,15 +181,13 @@ export class User extends LCObject implements IUser {
     newPassword: string,
     option?: IAuthOption
   ): Promise<void> {
-    const res = await this.app._requestToUluru(
-      {
-        method: 'PUT',
-        path: `/1.1/users/${this.objectId}/updatePassword`,
-        header: { 'X-LC-Session': this.sessionToken },
-        body: { old_password: oldPassword, new_password: newPassword },
-      },
-      option
-    );
+    const req = new HTTPRequest({
+      method: 'PUT',
+      path: `/1.1/users/${this.objectId}/updatePassword`,
+      header: { 'X-LC-Session': this.sessionToken },
+      body: { old_password: oldPassword, new_password: newPassword },
+    });
+    const res = await this.app._requestToUluru(req, option);
     const User = new UserClass(this.app);
     const currentUser = User.current();
   }

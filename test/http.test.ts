@@ -1,5 +1,4 @@
 import 'should';
-import { HTTPRequest } from '../src/core/http';
 
 describe('HTTPRequest', function () {
   describe('.url', function () {

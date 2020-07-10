@@ -1,7 +1,7 @@
 import { File } from './storage/Object';
-import { HTTPResponse } from './http';
 import { App } from './App';
 import { PlatformSupport } from './Platform';
+import { IHTTPResponse } from '../adapters';
 
 export abstract class FileUploader {
   constructor(public app: App) {}
@@ -11,7 +11,7 @@ export abstract class FileUploader {
     url: string,
     key: string,
     token: string
-  ): Promise<HTTPResponse>;
+  ): Promise<IHTTPResponse>;
 }
 
 export class QiniuFileProvider extends FileUploader {
@@ -20,7 +20,7 @@ export class QiniuFileProvider extends FileUploader {
     url: string,
     key: string,
     token: string
-  ): Promise<HTTPResponse> {
+  ): Promise<IHTTPResponse> {
     const files = [
       {
         field: 'file',
@@ -33,11 +33,6 @@ export class QiniuFileProvider extends FileUploader {
       token,
       name: file.name,
     };
-    return PlatformSupport.getPlatform().network.upload(
-      'POST',
-      url,
-      files,
-      formData
-    );
+    return PlatformSupport.getPlatform().upload('POST', url, files, formData);
   }
 }

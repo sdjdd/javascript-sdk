@@ -1,26 +1,43 @@
-import { HTTPResponse, HTTPRequest } from '../http';
-import { PlatformSupport } from '../Platform';
+import { IHTTPRequest, HTTPHeader } from '../../adapters';
 
-export function httpStatusOK(status: number): boolean {
-  return /^2/.test(status.toString());
+export interface IHTTPRequestInitOption {
+  method?: string;
+  baseURL?: string;
+  path?: string;
+  query?: Record<string, string>;
+  header?: HTTPHeader;
+  body?: unknown;
 }
 
-export function checkUluruResponse(res: HTTPResponse): void {
-  if (!httpStatusOK(res.status)) {
-    const err = res.body as {
-      code: number;
-      error: string;
-    };
-    throw new Error(`code: ${err.code}, message: ${err.error}`);
-  }
-}
+export class HTTPRequest implements IHTTPRequest {
+  method: string;
+  baseURL: string;
+  path: string;
+  query: Record<string, string> = {};
+  header: HTTPHeader = {};
+  body: unknown;
 
-export async function requestToUluru(req: HTTPRequest): Promise<HTTPResponse> {
-  const platform = PlatformSupport.getPlatform();
-  const res = await platform.network.request(req);
-  if (typeof res.body === 'string') {
-    res.body = JSON.parse(res.body);
+  constructor(option?: IHTTPRequestInitOption) {
+    this.method = option?.method ?? 'GET';
+    this.baseURL = option?.baseURL;
+    this.path = option?.path;
+    this.query = option?.query ?? {};
+    this.header = option?.header ?? {};
+    this.body = option?.body;
   }
-  checkUluruResponse(res);
-  return res;
+
+  get url(): string {
+    if (!this.baseURL) {
+      throw new Error('The baseURL is empty');
+    }
+    let url = this.baseURL + (this.path ?? '');
+    const qstr = Object.entries(this.query)
+      .map(([k, v]) => k + '=' + encodeURIComponent(v))
+      .join('&');
+    if (qstr) {
+      const sp = url.includes('?') ? '&' : '?';
+      url += sp + qstr;
+    }
+    return url;
+  }
 }

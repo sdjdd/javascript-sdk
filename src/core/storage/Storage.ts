@@ -2,7 +2,6 @@ import { Class, UserClass } from './Class';
 import { FileUploader, QiniuFileProvider } from '../FileUploader';
 import { File } from './Object';
 import { App } from '../App';
-import { HTTPResponse } from '../http';
 import { Batch } from './Batch';
 import { IClass } from '../types';
 

@@ -1,56 +1,16 @@
-import { HTTPRequest, HTTPResponse } from './http';
-
-export interface IRequestOption {
-  signal: { onabort(): void };
-}
-
-export type Request = (
-  req: HTTPRequest,
-  option?: IRequestOption
-) => Promise<HTTPResponse>;
-
-export interface FileData {
-  field: string;
-  name: string;
-  data: string;
-}
-
-export type Upload = (
-  method: string,
-  url: string,
-  files: FileData[],
-  formData?: Record<string, string>
-) => Promise<HTTPResponse>;
-
-export interface Network {
-  request: Request;
-  upload: Upload;
-}
-
-export interface KVStorage {
-  set(key: string, value: string): void;
-  get(key: string): string;
-  remove(key: string): void;
-  clear(): void;
-}
-
-export interface Platform {
-  name: string;
-  network: Network;
-  storage: KVStorage;
-}
+import { IPlatform } from '../adapters';
 
 export class PlatformSupport {
-  private static platform: Platform;
+  private static platform: IPlatform;
 
-  static setPlatform(platform: Platform): void {
+  static setPlatform(platform: IPlatform): void {
     if (PlatformSupport.platform) {
       throw new Error('platform already defined');
     }
     PlatformSupport.platform = platform;
   }
 
-  static getPlatform(): Platform {
+  static getPlatform(): IPlatform {
     if (!PlatformSupport.platform) {
       throw new Error('platform not set');
     }

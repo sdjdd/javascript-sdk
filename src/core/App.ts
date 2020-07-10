@@ -1,13 +1,13 @@
-import { PlatformSupport, Platform } from './Platform';
-import { HTTPRequest, HTTPResponse } from './http';
+import { PlatformSupport } from './Platform';
 import { IAppInfo, IAuthOption } from './types';
-import { log, UluruError } from './utils';
+import { log, UluruError, HTTPRequest } from './utils';
+import { IPlatform, IHTTPResponse } from '../adapters';
 
 export const KEY_CURRENT_USER = 'current-user';
 
 export class App {
   info: IAppInfo;
-  platform: Platform;
+  platform: IPlatform;
 
   private _sessionToken: string;
   private _useMasterKey: boolean;
@@ -52,22 +52,18 @@ export class App {
     this._sessionToken = sessionToken;
   }
 
-  async _request(req: HTTPRequest): Promise<HTTPResponse> {
+  async _request(req: HTTPRequest): Promise<IHTTPResponse> {
     log('LC:Request:send', '%O', req);
-    const res = await this.platform.network.request(req);
+    const res = await this.platform.request(req);
     log('LC:Request:recv', '%O', res);
     return res;
   }
 
   async _requestToUluru(
-    req: Partial<HTTPRequest>,
+    req: HTTPRequest,
     option?: IAuthOption
-  ): Promise<HTTPResponse> {
+  ): Promise<IHTTPResponse> {
     req.baseURL = this.info.serverURL;
-
-    if (!req.header) {
-      req.header = {};
-    }
     req.header['Content-Type'] = 'application/json';
     req.header['X-LC-UA'] = this.platform.name;
     req.header['X-LC-Id'] = this.info.appId;
@@ -90,7 +86,7 @@ export class App {
       req.header['X-LC-Session'] = sessionToken;
     }
 
-    const res = await this._request(req as HTTPRequest);
+    const res = await this._request(req);
     if (typeof res.body === 'string') {
       res.body = JSON.parse(res.body);
     }
@@ -98,7 +94,6 @@ export class App {
       const err = res.body as { code: number; error: string };
       throw new UluruError(err.code, err.error);
     }
-
     return res;
   }
 

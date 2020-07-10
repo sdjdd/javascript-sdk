@@ -1,16 +1,25 @@
-import { Platform, Network, FileData, PlatformSupport } from '../src/core';
-import { HTTPRequest, HTTPResponse } from '../src/core/http';
+import { PlatformSupport } from '../src/core';
 import { MemoryStorage } from '../src/node';
+import {
+  IPlatform,
+  IHTTPRequest,
+  IHTTPResponse,
+  IFileData,
+} from '../src/adapters';
+import { HTTPRequest } from '../src/core/utils';
 
-export class TestNetwork implements Network {
+export class TestPlatform implements IPlatform {
+  name: 'Test platform';
+  storage = new MemoryStorage();
+
   private _requests: HTTPRequest[] = [];
-  private _responses: HTTPResponse[] = [];
-  private _defaultResponse: HTTPResponse = {
+  private _responses: IHTTPResponse[] = [];
+  private _defaultResponse: IHTTPResponse = {
     status: 200,
     body: {},
   };
 
-  pushResponse(res: HTTPResponse): void {
+  pushResponse(res: IHTTPResponse): void {
     this._responses.push(res);
   }
 
@@ -18,11 +27,11 @@ export class TestNetwork implements Network {
     return this._requests.pop();
   }
 
-  setDefaultResponse(res: HTTPResponse): void {
+  setDefaultResponse(res: IHTTPResponse): void {
     this._defaultResponse = res;
   }
 
-  async request(req: HTTPRequest): Promise<HTTPResponse> {
+  async request(req: HTTPRequest): Promise<IHTTPResponse> {
     this._requests.push(req);
     if (this._responses.length > 0) {
       return this._responses.pop();
@@ -33,9 +42,9 @@ export class TestNetwork implements Network {
   async upload(
     method: string,
     url: string,
-    files: FileData[],
+    files: IFileData[],
     formData?: Record<string, string>
-  ): Promise<HTTPResponse> {
+  ): Promise<IHTTPResponse> {
     return {
       status: 200,
       body: {},
@@ -43,13 +52,7 @@ export class TestNetwork implements Network {
   }
 }
 
-export const globalTestNetwork = new TestNetwork();
-
-export const globalTestPlatform: Platform = {
-  name: 'test platform',
-  network: globalTestNetwork,
-  storage: new MemoryStorage(),
-};
+export const globalTestPlatform = new TestPlatform();
 
 export function setGlobalTestPlatform(): void {
   try {

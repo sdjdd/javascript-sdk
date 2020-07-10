@@ -1,6 +1,5 @@
 import { App } from '../App';
-import { isRegExp } from '../utils';
-import { HTTPRequest } from '../http';
+import { isRegExp, HTTPRequest } from '../utils';
 import { IObjectData, IObject, IQuery } from '../types';
 import { ObjectDecoder } from './encoding';
 
@@ -289,11 +288,8 @@ export class Query implements IQuery {
     }
   }
 
-  _makeRequest(): Partial<HTTPRequest> {
-    const req: Partial<HTTPRequest> = {
-      method: 'GET',
-      path: `/1.1/classes/${this.className}`,
-    };
+  _makeRequest(): HTTPRequest {
+    const req = new HTTPRequest({ path: `/1.1/classes/${this.className}` });
     const where = JSON.stringify(this._parseWhere());
     if (where != '{}') {
       req.query = { where };

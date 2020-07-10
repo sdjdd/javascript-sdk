@@ -15,8 +15,7 @@ import {
   IUserClass,
 } from '../types';
 import { ObjectDecoder, ObjectEncoder } from './encoding';
-import { HTTPRequest } from '../http';
-import { removeReservedKeys } from '../utils';
+import { removeReservedKeys, HTTPRequest } from '../utils';
 import { v4 as uuid } from 'uuid';
 
 export class Class extends Query implements IClass {
@@ -32,16 +31,16 @@ export class Class extends Query implements IClass {
 
   async add(data: IObjectData, option?: IObjectAddOption): Promise<IObject> {
     removeReservedKeys(data);
-    const query: HTTPRequest['query'] = {};
-    if (option?.fetch) {
-      query.fetchWhenSave = 'true';
-    }
-    const res = await this.app._requestToUluru({
+    const req = new HTTPRequest({
       method: 'POST',
       path: this._path,
       body: ObjectEncoder.encodeData(data),
-      query,
     });
+    if (option?.fetch) {
+      req.query.fetchWhenSave = 'true';
+    }
+
+    const res = await this.app._requestToUluru(req);
 
     const _data = res.body as IObjectData;
     return ObjectDecoder.decode(_data, this.className).setApp(this.app);
@@ -89,10 +88,7 @@ export class UserClass extends Class implements IUserClass {
 
   async become(sessionToken: string): Promise<IUser> {
     const res = await this.app._requestToUluru(
-      {
-        method: 'GET',
-        path: this._path + '/me',
-      },
+      new HTTPRequest({ path: this._path + '/me' }),
       { sessionToken }
     );
 
@@ -121,11 +117,13 @@ export class UserClass extends Class implements IUserClass {
   }
 
   private async _logInWithData(data: IUserData): Promise<IUser> {
-    const res = await this.app._requestToUluru({
-      method: 'POST',
-      path: '/1.1/login',
-      body: data,
-    });
+    const res = await this.app._requestToUluru(
+      new HTTPRequest({
+        method: 'POST',
+        path: '/1.1/login',
+        body: data,
+      })
+    );
 
     const _data = res.body as IUserData;
     const user = ObjectDecoder.decode(_data, this.className) as User;
@@ -166,16 +164,15 @@ export class UserClass extends Class implements IUserClass {
     authData: Record<string, unknown>,
     option?: IUserLoginWithAuthDataOption
   ): Promise<IUser> {
-    const query: HTTPRequest['query'] = {};
-    if (option?.failOnNotExist) {
-      query.failOnNotExist = 'true';
-    }
-    const res = await this.app._requestToUluru({
+    const req = new HTTPRequest({
       method: 'POST',
       path: this._path,
-      query,
       body: { authData: { [platform]: authData } },
     });
+    if (option?.failOnNotExist) {
+      req.query.failOnNotExist = 'true';
+    }
+    const res = await this.app._requestToUluru(req);
 
     const data = res.body as IObjectData;
     const user = ObjectDecoder.decode(data, this.className) as User;
@@ -206,11 +203,13 @@ export class UserClass extends Class implements IUserClass {
   }
 
   async requestEmailVerify(email: string): Promise<void> {
-    await this.app._requestToUluru({
-      method: 'POST',
-      path: '/1.1/requestEmailVerify',
-      body: { email },
-    });
+    await this.app._requestToUluru(
+      new HTTPRequest({
+        method: 'POST',
+        path: '/1.1/requestEmailVerify',
+        body: { email },
+      })
+    );
   }
 
   async requestLoginSmsCode(
@@ -222,11 +221,11 @@ export class UserClass extends Class implements IUserClass {
       body.validate_token = option.validateToken;
     }
     await this.app._requestToUluru(
-      {
+      new HTTPRequest({
         method: 'POST',
         path: '/1.1/requestLoginSmsCode',
         body,
-      },
+      }),
       option
     );
   }
@@ -240,21 +239,23 @@ export class UserClass extends Class implements IUserClass {
       body.validate_token = option.validateToken;
     }
     await this.app._requestToUluru(
-      {
+      new HTTPRequest({
         method: 'POST',
         path: '/1.1/requestMobilePhoneVerify',
         body,
-      },
+      }),
       option
     );
   }
 
   async requestPasswordReset(email: string): Promise<void> {
-    await this.app._requestToUluru({
-      method: 'POST',
-      path: '/1.1/requestPasswordReset',
-      body: { email },
-    });
+    await this.app._requestToUluru(
+      new HTTPRequest({
+        method: 'POST',
+        path: '/1.1/requestPasswordReset',
+        body: { email },
+      })
+    );
   }
 
   async requestPasswordResetBySmsCode(
@@ -266,27 +267,31 @@ export class UserClass extends Class implements IUserClass {
       body.validate_token = option.validateToken;
     }
     await this.app._requestToUluru(
-      {
+      new HTTPRequest({
         method: 'POST',
         path: '/1.1/requestPasswordResetBySmsCode',
         body,
-      },
+      }),
       option
     );
   }
 
   async resetPasswordBySmsCode(code: string, password: string): Promise<void> {
-    await this.app._requestToUluru({
-      method: 'PUT',
-      path: '/1.1/resetPasswordBySmsCode/' + code,
-      body: { password },
-    });
+    await this.app._requestToUluru(
+      new HTTPRequest({
+        method: 'PUT',
+        path: '/1.1/resetPasswordBySmsCode/' + code,
+        body: { password },
+      })
+    );
   }
 
   async verifyMobilePhone(code: string): Promise<void> {
-    await this.app._requestToUluru({
-      method: 'POST',
-      path: '/1.1/resetPasswordBySmsCode/' + code,
-    });
+    await this.app._requestToUluru(
+      new HTTPRequest({
+        method: 'POST',
+        path: '/1.1/resetPasswordBySmsCode/' + code,
+      })
+    );
   }
 }

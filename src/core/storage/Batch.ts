@@ -1,7 +1,7 @@
 import { App } from '../App';
 import { LCObject } from './Object';
-import { HTTPRequest } from '../http';
 import { IObjectData } from '../types';
+import { HTTPRequest } from '../utils';
 
 export interface BatchResultSuccess {
   objectId: string;
