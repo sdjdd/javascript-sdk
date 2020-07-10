@@ -21,10 +21,6 @@ import { v4 as uuid } from 'uuid';
 export class Class extends Query implements IClass {
   app: App;
 
-  protected get _path(): string {
-    return '/1.1/classes/' + this.className;
-  }
-
   object(id: string): IObject {
     return new LCObject(this.className, id, this.app);
   }
@@ -33,14 +29,14 @@ export class Class extends Query implements IClass {
     removeReservedKeys(data);
     const req = new HTTPRequest({
       method: 'POST',
-      path: this._path,
+      path: '/1.1/classes/' + this.className,
       body: ObjectEncoder.encodeData(data),
     });
     if (option?.fetch) {
       req.query.fetchWhenSave = 'true';
     }
 
-    const res = await this.app._requestToUluru(req);
+    const res = await this.app._uluru(req);
 
     const _data = res.body as IObjectData;
     return ObjectDecoder.decode(_data, this.className).setApp(this.app);
@@ -64,10 +60,6 @@ export class UserClass extends Class implements IUserClass {
     return null;
   }
 
-  protected get _path(): string {
-    return '/1.1/users';
-  }
-
   object(id: string): IUser {
     return new User(id, this.app);
   }
@@ -87,8 +79,8 @@ export class UserClass extends Class implements IUserClass {
   }
 
   async become(sessionToken: string): Promise<IUser> {
-    const res = await this.app._requestToUluru(
-      new HTTPRequest({ path: this._path + '/me' }),
+    const res = await this.app._uluru(
+      new HTTPRequest({ path: '/1.1/users/me' }),
       { sessionToken }
     );
 
@@ -117,7 +109,7 @@ export class UserClass extends Class implements IUserClass {
   }
 
   private async _logInWithData(data: IUserData): Promise<IUser> {
-    const res = await this.app._requestToUluru(
+    const res = await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
         path: '/1.1/login',
@@ -166,13 +158,13 @@ export class UserClass extends Class implements IUserClass {
   ): Promise<IUser> {
     const req = new HTTPRequest({
       method: 'POST',
-      path: this._path,
+      path: '/1.1/users',
       body: { authData: { [platform]: authData } },
     });
     if (option?.failOnNotExist) {
       req.query.failOnNotExist = 'true';
     }
-    const res = await this.app._requestToUluru(req);
+    const res = await this.app._uluru(req);
 
     const data = res.body as IObjectData;
     const user = ObjectDecoder.decode(data, this.className) as User;
@@ -203,7 +195,7 @@ export class UserClass extends Class implements IUserClass {
   }
 
   async requestEmailVerify(email: string): Promise<void> {
-    await this.app._requestToUluru(
+    await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
         path: '/1.1/requestEmailVerify',
@@ -220,7 +212,7 @@ export class UserClass extends Class implements IUserClass {
     if (option?.validateToken) {
       body.validate_token = option.validateToken;
     }
-    await this.app._requestToUluru(
+    await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
         path: '/1.1/requestLoginSmsCode',
@@ -238,7 +230,7 @@ export class UserClass extends Class implements IUserClass {
     if (option?.validateToken) {
       body.validate_token = option.validateToken;
     }
-    await this.app._requestToUluru(
+    await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
         path: '/1.1/requestMobilePhoneVerify',
@@ -249,7 +241,7 @@ export class UserClass extends Class implements IUserClass {
   }
 
   async requestPasswordReset(email: string): Promise<void> {
-    await this.app._requestToUluru(
+    await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
         path: '/1.1/requestPasswordReset',
@@ -266,7 +258,7 @@ export class UserClass extends Class implements IUserClass {
     if (option?.validateToken) {
       body.validate_token = option.validateToken;
     }
-    await this.app._requestToUluru(
+    await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
         path: '/1.1/requestPasswordResetBySmsCode',
@@ -277,7 +269,7 @@ export class UserClass extends Class implements IUserClass {
   }
 
   async resetPasswordBySmsCode(code: string, password: string): Promise<void> {
-    await this.app._requestToUluru(
+    await this.app._uluru(
       new HTTPRequest({
         method: 'PUT',
         path: '/1.1/resetPasswordBySmsCode/' + code,
@@ -287,7 +279,7 @@ export class UserClass extends Class implements IUserClass {
   }
 
   async verifyMobilePhone(code: string): Promise<void> {
-    await this.app._requestToUluru(
+    await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
         path: '/1.1/resetPasswordBySmsCode/' + code,

@@ -1,5 +1,4 @@
-export type ACLSubject = '*' | string;
-export type ACLAction = 'read' | 'write';
+import { ACLAction, ACLSubject } from '../types';
 
 export interface ACLPrivilege {
   read?: boolean;
@@ -7,6 +6,8 @@ export interface ACLPrivilege {
 }
 
 export class ACL {
+  private _data: Record<string, ACLPrivilege> = {};
+
   static from(data: Record<string, ACLPrivilege>): ACL {
     const acl = new ACL();
     Object.entries(data).forEach(([subject, privilege]) => {
@@ -24,15 +25,12 @@ export class ACL {
     return acl;
   }
 
-  private _data: Record<string, ACLPrivilege> = {};
-
   private static _subjectToId(subject: ACLSubject): string {
-    return subject;
-    // if (subject instanceof User) {
-    //   return subject.objectId;
-    // } else {
-    //   return subject;
-    // }
+    if (typeof subject === 'string') {
+      return subject;
+    } else {
+      return subject.objectId;
+    }
   }
 
   allow(subject: ACLSubject, action: ACLAction): this {

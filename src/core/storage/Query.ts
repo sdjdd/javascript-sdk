@@ -262,7 +262,7 @@ export class Query implements IQuery {
     req.query.count = '1';
     req.query.limit = '0';
 
-    const res = await this.app._requestToUluru(req);
+    const res = await this.app._uluru(req);
 
     return (res.body as { count: number }).count;
   }
@@ -292,7 +292,7 @@ export class Query implements IQuery {
     const req = new HTTPRequest({ path: `/1.1/classes/${this.className}` });
     const where = JSON.stringify(this._parseWhere());
     if (where != '{}') {
-      req.query = { where };
+      req.query.where = where;
     }
     if (this._limit !== undefined) {
       req.query.limit = this._limit.toString();
@@ -312,9 +312,7 @@ export class Query implements IQuery {
   }
 
   async find(): Promise<IObject[]> {
-    const req = this._makeRequest();
-
-    const res = await this.app._requestToUluru(req);
+    const res = await this.app._uluru(this._makeRequest());
 
     const results = (res.body as { results: IObjectData[] }).results;
     if (!results) {

@@ -36,7 +36,7 @@ export class App {
   }
 
   getSessionToken(): string {
-    if (!this._sessionToken && typeof this._sessionToken !== 'string') {
+    if (!this._sessionToken && this._sessionToken !== '') {
       const userStr = this._kvGet(KEY_CURRENT_USER);
       if (userStr) {
         const user = JSON.parse(userStr);
@@ -59,19 +59,18 @@ export class App {
     return res;
   }
 
-  async _requestToUluru(
-    req: HTTPRequest,
-    option?: IAuthOption
-  ): Promise<IHTTPResponse> {
+  async _uluru(req: HTTPRequest, option?: IAuthOption): Promise<IHTTPResponse> {
     req.baseURL = this.info.serverURL;
     req.header['Content-Type'] = 'application/json';
-    req.header['X-LC-UA'] = this.platform.name;
+    req.header['X-LC-UA'] = this.platform.userAgent || 'unknown';
     req.header['X-LC-Id'] = this.info.appId;
 
-    const useMasterKey =
-      option?.useMasterKey !== undefined
-        ? option?.useMasterKey
-        : this._useMasterKey;
+    let useMasterKey: boolean;
+    if (option?.useMasterKey !== undefined) {
+      useMasterKey = option.useMasterKey;
+    } else {
+      useMasterKey = this._useMasterKey;
+    }
     if (useMasterKey) {
       if (!this.info.masterKey) {
         throw new Error('The masterKey is not provided');
@@ -109,7 +108,7 @@ export class App {
   }
 
   _kvRemove(key: string): void {
-    log('LC:KV:delete', key);
+    log('LC:KV:rm', key);
     this.platform.storage.remove(this.info.appId + ':' + key);
   }
 }

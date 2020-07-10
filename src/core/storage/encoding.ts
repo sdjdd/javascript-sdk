@@ -17,14 +17,12 @@ export class ObjectEncoder {
       }
 
       if (isDate(value)) {
+        const date = value as Date;
         if (key === 'createdAt' || key == 'updatedAt') {
-          encoded[key] = (value as Date).toISOString();
+          encoded[key] = date.toISOString();
         } else {
-          const date: IDate = {
-            __type: 'Date',
-            iso: (value as Date).toISOString(),
-          };
-          encoded[key] = date;
+          const d: IDate = { __type: 'Date', iso: date.toISOString() };
+          encoded[key] = d;
         }
         return;
       }

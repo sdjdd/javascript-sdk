@@ -1,7 +1,7 @@
 import 'should';
 import { ObjectEncoder, ObjectDecoder } from '../src/core/storage/encoding';
 import { IPointer, IGeoPoint, IDate } from '../src/core/types';
-import { LCObject, GeoPoint, App, User } from '../src/core';
+import { LCObject, GeoPoint, User } from '../src/core';
 
 describe('ObjectEncoder', function () {
   describe('.encodeData', function () {
@@ -157,7 +157,7 @@ describe('ObjectDecoder', function () {
       obj.className.should.eql('Test');
     });
 
-    it('should return an User when className is "_User"', function () {
+    it('should return a User when className is "_User"', function () {
       const data = { className: '_User', objectId: 'test-object-id' };
       const obj = ObjectDecoder.decode(data);
       obj.should.instanceOf(User);

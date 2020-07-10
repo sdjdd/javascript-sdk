@@ -50,6 +50,7 @@ export interface IObjectGetOption {
   include?: string[];
 }
 
+export type ACLSubject = '*' | string | IUser;
 export type ACLAction = 'read' | 'write';
 
 export interface IACL {

@@ -90,7 +90,7 @@ export class LCObject implements IObject {
     if (option?.include) {
       req.query.include = option.include.join(',');
     }
-    const res = await this.app._requestToUluru(req);
+    const res = await this.app._uluru(req);
 
     const obj = new LCObject(this.className, this.objectId, this.app);
     obj.data = res.body as IObjectData;
@@ -99,7 +99,7 @@ export class LCObject implements IObject {
 
   async delete(option?: IAuthOption): Promise<void> {
     const req = new HTTPRequest({ method: 'DELETE', path: this._path });
-    await this.app._requestToUluru(req, option);
+    await this.app._uluru(req, option);
   }
 
   async get(option?: IObjectGetOption): Promise<IObject> {
@@ -107,7 +107,7 @@ export class LCObject implements IObject {
     if (option?.include) {
       req.query.include = option.include.join(',');
     }
-    const res = await this.app._requestToUluru(req);
+    const res = await this.app._uluru(req);
 
     const attr = res.body as IObjectData;
     if (Object.keys(attr).length === 0) {
@@ -166,7 +166,7 @@ export class User extends LCObject implements IUser {
   async isAuthenticated(): Promise<boolean> {
     try {
       const req = new HTTPRequest({ path: '/1.1/users/me' });
-      await this.app._requestToUluru(req, { sessionToken: this.sessionToken });
+      await this.app._uluru(req, { sessionToken: this.sessionToken });
       return true;
     } catch (err) {
       if ((err as UluruError).code !== 211) {
@@ -187,7 +187,7 @@ export class User extends LCObject implements IUser {
       header: { 'X-LC-Session': this.sessionToken },
       body: { old_password: oldPassword, new_password: newPassword },
     });
-    const res = await this.app._requestToUluru(req, option);
+    const res = await this.app._uluru(req, option);
     const User = new UserClass(this.app);
     const currentUser = User.current();
   }

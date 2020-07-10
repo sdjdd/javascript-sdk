@@ -1,6 +1,9 @@
 import 'should';
 import { LCObject, App } from '../src/core';
-import { setGlobalTestPlatform, globalTestPlatform } from './TestPlatform';
+import {
+  setGlobalTestPlatform,
+  globalTestPlatform as platform,
+} from './TestPlatform';
 
 setGlobalTestPlatform();
 
@@ -31,13 +34,13 @@ describe('LCObject', function () {
 
     it('should send "PUT" request', async function () {
       await obj.update({});
-      const req = globalTestPlatform.popRequest();
+      const req = platform.popRequest();
       req.method.should.eql('PUT');
     });
 
     it('should send request to correct path', async function () {
       await obj.update({});
-      const req = globalTestPlatform.popRequest();
+      const req = platform.popRequest();
       req.path.should.endWith(`/${obj.className}/${obj.objectId}`);
     });
 
@@ -45,7 +48,7 @@ describe('LCObject', function () {
       const date = new Date();
       const data = { str: 'string', date };
       await obj.update(data);
-      const req = globalTestPlatform.popRequest();
+      const req = platform.popRequest();
       (req.body as any).str.should.eql('string');
       (req.body as any).date.should.eql({
         __type: 'Date',
@@ -56,7 +59,7 @@ describe('LCObject', function () {
     it('should remove reserved keys', async function () {
       const data = { objectId: '-', createdAt: '-', updatedAt: '-' };
       await obj.update(data);
-      const req = globalTestPlatform.popRequest();
+      const req = platform.popRequest();
       ((req.body as any).objectId === undefined).should.true();
       ((req.body as any).createdAt === undefined).should.true();
       ((req.body as any).updatedAt === undefined).should.true();
@@ -65,7 +68,7 @@ describe('LCObject', function () {
     it('should set "include" query when include keys', async function () {
       const include = ['key1', 'key2', 'key3'];
       await obj.update({}, { include });
-      const req = globalTestPlatform.popRequest();
+      const req = platform.popRequest();
       req.query.should.eql({ include: include.join(',') });
     });
   });
@@ -75,33 +78,33 @@ describe('LCObject', function () {
 
     it('should send "DELETE" request', async function () {
       await obj.delete();
-      const req = globalTestPlatform.popRequest();
+      const req = platform.popRequest();
       req.method.should.eql('DELETE');
     });
 
     it('should send request to correct path', async function () {
       await obj.delete();
-      const req = globalTestPlatform.popRequest();
+      const req = platform.popRequest();
       req.path.should.endWith(`/${obj.className}/${obj.objectId}`);
     });
   });
 
   describe('#get', function () {
     before(function () {
-      globalTestPlatform.setDefaultResponse({
+      platform.setDefaultResponse({
         status: 200,
         body: { className: 'Test', objectId: 'test-object-id' },
       });
     });
 
     after(function () {
-      globalTestPlatform.setDefaultResponse({ status: 200, body: {} });
+      platform.setDefaultResponse({ status: 200, body: {} });
     });
 
     it('should send "GET" request', async function () {
       const obj = new LCObject('Test', 'test-object-id', testApp);
       await obj.get();
-      const req = globalTestPlatform.popRequest();
+      const req = platform.popRequest();
       req.method.should.eql('GET');
     });
 
@@ -109,7 +112,7 @@ describe('LCObject', function () {
       const obj = new LCObject('Test', 'test-object-id', testApp);
       const include = ['key1', 'key2', 'key3'];
       await obj.get({ include });
-      const req = globalTestPlatform.popRequest();
+      const req = platform.popRequest();
       req.query.should.eql({
         include: include.join(','),
       });
@@ -122,19 +125,19 @@ describe('LCObject', function () {
         key2: 'value2',
         key3: 'value3',
       };
-      globalTestPlatform.pushResponse({ status: 200, body: data });
+      platform.pushResponse({ status: 200, body: data });
       const obj = new LCObject('Test', 'test-object-id', testApp);
       const newObj = await obj.get();
-      globalTestPlatform.popRequest();
+      platform.popRequest();
       newObj.data.should.eql(data);
     });
 
     it('should fail when objectId not exists', function () {
       const obj = new LCObject('Test', 'test-object-id', testApp);
-      globalTestPlatform.pushResponse({ status: 200, body: {} });
+      platform.pushResponse({ status: 200, body: {} });
       return obj
         .get()
-        .finally(() => globalTestPlatform.popRequest())
+        .finally(() => platform.popRequest())
         .should.rejected();
     });
   });
