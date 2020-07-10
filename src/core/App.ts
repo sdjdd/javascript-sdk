@@ -1,6 +1,7 @@
 import { PlatformSupport, Platform } from './Platform';
 import { HTTPRequest, HTTPResponse } from './http';
 import { IAppInfo, IAuthOption } from './types';
+import { log, UluruError } from './utils';
 
 export const KEY_CURRENT_USER = 'current-user';
 
@@ -51,8 +52,11 @@ export class App {
     this._sessionToken = sessionToken;
   }
 
-  _request(req: HTTPRequest): Promise<HTTPResponse> {
-    return this.platform.network.request(req);
+  async _request(req: HTTPRequest): Promise<HTTPResponse> {
+    log('LC:Request:send', '%O', req);
+    const res = await this.platform.network.request(req);
+    log('LC:Request:recv', '%O', res);
+    return res;
   }
 
   async _requestToUluru(
@@ -86,27 +90,31 @@ export class App {
       req.header['X-LC-Session'] = sessionToken;
     }
 
-    const res = await this.platform.network.request(req as HTTPRequest);
+    const res = await this._request(req as HTTPRequest);
     if (typeof res.body === 'string') {
       res.body = JSON.parse(res.body);
     }
     if (!/^2/.test(res.status.toString())) {
       const err = res.body as { code: number; error: string };
-      throw new Error(`code: ${err.code}, message: ${err.error}`);
+      throw new UluruError(err.code, err.error);
     }
 
     return res;
   }
 
   _kvSet(key: string, value: string): void {
+    log('LC:KV:set', '%s = %s', key, value);
     this.platform.storage.set(this.info.appId + ':' + key, value);
   }
 
   _kvGet(key: string): string {
-    return this.platform.storage.get(this.info.appId + ':' + key);
+    const value = this.platform.storage.get(this.info.appId + ':' + key);
+    log('LC:KV:get', '%s = %s', key, value);
+    return value;
   }
 
   _kvRemove(key: string): void {
+    log('LC:KV:delete', key);
     this.platform.storage.remove(this.info.appId + ':' + key);
   }
 }

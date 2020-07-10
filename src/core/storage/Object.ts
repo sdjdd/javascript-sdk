@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import { App } from '../App';
-import { removeReservedKeys } from '../utils';
+import { removeReservedKeys, UluruError } from '../utils';
 import {
   IObject,
   IGeoPoint,
@@ -13,6 +13,7 @@ import {
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './encoding';
 import { HTTPRequest } from '../http';
+import { UserClass } from './Class';
 
 export class LCObject implements IObject {
   app: App;
@@ -176,11 +177,14 @@ export class User extends LCObject implements IUser {
     try {
       await this.app._requestToUluru({
         method: 'GET',
-        path: this._path + '/me',
+        path: '/1.1/users/me',
         header: { 'X-LC-Session': this.sessionToken },
       });
       return true;
     } catch (err) {
+      if ((err as UluruError).code !== 211) {
+        throw err;
+      }
       return false; // TODO: check error code
     }
   }
@@ -190,17 +194,16 @@ export class User extends LCObject implements IUser {
     newPassword: string,
     option?: IAuthOption
   ): Promise<void> {
-    await this.app._requestToUluru(
+    const res = await this.app._requestToUluru(
       {
         method: 'PUT',
-        path: this._path + '/' + this.objectId + '/updatePassword',
+        path: `/1.1/users/${this.objectId}/updatePassword`,
         header: { 'X-LC-Session': this.sessionToken },
-        body: {
-          old_password: oldPassword,
-          new_password: newPassword,
-        },
+        body: { old_password: oldPassword, new_password: newPassword },
       },
       option
     );
+    const User = new UserClass(this.app);
+    const currentUser = User.current();
   }
 }

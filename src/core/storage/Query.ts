@@ -1,7 +1,7 @@
 import { App } from '../App';
 import { isRegExp } from '../utils';
 import { HTTPRequest } from '../http';
-import { IObjectData, IObject } from '../types';
+import { IObjectData, IObject, IQuery } from '../types';
 import { ObjectDecoder } from './encoding';
 
 export type Condition =
@@ -24,7 +24,7 @@ interface OrderByAttribute {
   desc: boolean;
 }
 
-export class Query {
+export class Query implements IQuery {
   private _and: unknown[] = [];
   private _or: unknown[] = [];
   private _limit: number;
@@ -97,7 +97,7 @@ export class Query {
     return query;
   }
 
-  exclude(...column: string[]): Query {
+  except(...column: string[]): Query {
     const query = this.clone();
     column.forEach((col) => {
       query._select.delete(col);

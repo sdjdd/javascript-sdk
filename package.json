@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@types/superagent": "^4.1.7",
+    "debug": "^4.1.1",
     "superagent": "^5.2.2",
     "uuid": "^8.1.0"
   },

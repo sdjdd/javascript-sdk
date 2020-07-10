@@ -1,4 +1,5 @@
 export * from './http';
+export * from './log';
 
 const RESERVED_KEYS = new Set(['objectId', 'createdAt', 'updatedAt']);
 
@@ -26,4 +27,10 @@ export function removeReservedKeys(obj: Record<string, unknown>): void {
       delete obj[key];
     }
   });
+}
+
+export class UluruError extends Error {
+  constructor(public code: number, public error: string) {
+    super(`code: ${code}, message: ${error}`);
+  }
 }

@@ -1,10 +1,10 @@
-import { LCObject } from './Object';
+import { LCObject, User } from './Object';
 import { Query } from './Query';
 import { App, KEY_CURRENT_USER } from '../App';
 import {
   IObjectData,
   IClass,
-  IClassAddOption,
+  IObjectAddOption,
   IObject,
   IUser,
   IUserData,
@@ -12,6 +12,7 @@ import {
   IUserLoginWithAuthDataAndUnionIdOption,
   IAuthDataWithCaptchaToken,
   IAuthOption,
+  IUserClass,
 } from '../types';
 import { ObjectDecoder, ObjectEncoder } from './encoding';
 import { HTTPRequest } from '../http';
@@ -25,11 +26,11 @@ export class Class extends Query implements IClass {
     return '/1.1/classes/' + this.className;
   }
 
-  object(id: string): LCObject {
+  object(id: string): IObject {
     return new LCObject(this.className, id, this.app);
   }
 
-  async add(data: IObjectData, option?: IClassAddOption): Promise<IObject> {
+  async add(data: IObjectData, option?: IObjectAddOption): Promise<IObject> {
     removeReservedKeys(data);
     const query: HTTPRequest['query'] = {};
     if (option?.fetch) {
@@ -47,15 +48,29 @@ export class Class extends Query implements IClass {
   }
 }
 
-export class UserClass extends Class {
+export class UserClass extends Class implements IUserClass {
   private _currentUser: IUser;
 
   constructor(app: App) {
     super(app, '_User');
   }
 
+  static current(app: App): IUser {
+    const userStr = app._kvGet(KEY_CURRENT_USER);
+    if (userStr) {
+      const user = ObjectDecoder.decode(JSON.parse(userStr)) as User;
+      user.setApp(app);
+      return user;
+    }
+    return null;
+  }
+
   protected get _path(): string {
     return '/1.1/users';
+  }
+
+  object(id: string): IUser {
+    return new User(id, this.app);
   }
 
   private _setCurrent(user: IUser): void {
@@ -67,36 +82,35 @@ export class UserClass extends Class {
 
   current(): IUser {
     if (!this._currentUser) {
-      const userStr = this.app._kvGet(KEY_CURRENT_USER);
-      if (userStr) {
-        const user = ObjectDecoder.decode(JSON.parse(userStr));
-        this._currentUser = user.setApp(this.app);
-      }
+      this._currentUser = UserClass.current(this.app);
     }
     return this._currentUser;
   }
 
   async become(sessionToken: string): Promise<IUser> {
-    const res = await this.app._requestToUluru({
-      method: 'GET',
-      path: this._path + '/me',
-      header: { 'X-LC-Session': sessionToken },
-    });
+    const res = await this.app._requestToUluru(
+      {
+        method: 'GET',
+        path: this._path + '/me',
+      },
+      { sessionToken }
+    );
 
-    const user = ObjectDecoder.decode(res.body as IObjectData, this.className);
+    const data = res.body as IObjectData;
+    const user = ObjectDecoder.decode(data, this.className) as User;
     user.setApp(this.app);
     this._setCurrent(user);
 
     return user;
   }
 
-  async signUp(data: IUserData, option?: IClassAddOption): Promise<IUser> {
+  async signUp(data: IUserData, option?: IObjectAddOption): Promise<IUser> {
     const user = (await this.add(data, option)) as IUser;
     this._setCurrent(user);
     return user;
   }
 
-  async signUpOrlogInWithMobilePhone(
+  async signUpOrLogInWithMobilePhone(
     mobilePhoneNumber: string,
     smsCode: string,
     data: Record<string, unknown>,
@@ -114,7 +128,8 @@ export class UserClass extends Class {
     });
 
     const _data = res.body as IUserData;
-    const user = ObjectDecoder.decode(_data, this.className).setApp(this.app);
+    const user = ObjectDecoder.decode(_data, this.className) as User;
+    user.setApp(this.app);
     this._setCurrent(user);
 
     return user;
@@ -162,7 +177,8 @@ export class UserClass extends Class {
       body: { authData: { [platform]: authData } },
     });
 
-    const user = ObjectDecoder.decode(res.body as IObjectData, this.className);
+    const data = res.body as IObjectData;
+    const user = ObjectDecoder.decode(data, this.className) as User;
     user.setApp(this.app);
     this._setCurrent(user);
 
@@ -184,9 +200,9 @@ export class UserClass extends Class {
   }
 
   logOut(): void {
+    this._currentUser = null;
     this.app.setSessionToken(null);
     this.app._kvRemove(KEY_CURRENT_USER);
-    this._currentUser = null;
   }
 
   async requestEmailVerify(email: string): Promise<void> {
