@@ -12,7 +12,7 @@ export class App {
   private _sessionToken: string;
   private _useMasterKey: boolean;
 
-  constructor(config?: IAppInfo) {
+  constructor(config: IAppInfo) {
     this.info = {
       appId: config?.appId,
       appKey: config?.appKey,

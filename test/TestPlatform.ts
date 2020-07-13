@@ -1,11 +1,6 @@
 import { PlatformSupport } from '../src/core';
 import { MemoryStorage } from '../src/node';
-import {
-  IPlatform,
-  IHTTPRequest,
-  IHTTPResponse,
-  IFileData,
-} from '../src/adapters';
+import { IPlatform, IHTTPResponse, IFileData } from '../src/adapters';
 import { HTTPRequest } from '../src/core/utils';
 
 export class TestPlatform implements IPlatform {
@@ -18,9 +13,14 @@ export class TestPlatform implements IPlatform {
     status: 200,
     body: {},
   };
+  private _errors: Error[] = [];
 
   pushResponse(res: IHTTPResponse): void {
     this._responses.push(res);
+  }
+
+  pushError(err: Error): void {
+    this._errors.push(err);
   }
 
   popRequest(): HTTPRequest {
@@ -33,6 +33,9 @@ export class TestPlatform implements IPlatform {
 
   async request(req: HTTPRequest): Promise<IHTTPResponse> {
     this._requests.push(req);
+    if (this._errors.length > 0) {
+      throw this._errors.pop();
+    }
     if (this._responses.length > 0) {
       return this._responses.pop();
     }

@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid';
-import { App } from '../App';
+import { App, KEY_CURRENT_USER } from '../App';
 import { removeReservedKeys, UluruError, HTTPRequest } from '../utils';
 import {
   IObject,
@@ -10,6 +10,7 @@ import {
   IObjectUpdateOption,
   IUser,
   IAuthOption,
+  IUserData,
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './encoding';
 import { UserClass } from './Class';
@@ -144,6 +145,8 @@ export class GeoPoint implements IGeoPoint {
 }
 
 export class User extends LCObject implements IUser {
+  data?: IUserData;
+
   constructor(objectId: string, app?: App) {
     super('_User', objectId, app);
   }
@@ -188,7 +191,16 @@ export class User extends LCObject implements IUser {
       body: { old_password: oldPassword, new_password: newPassword },
     });
     const res = await this.app._uluru(req, option);
-    const User = new UserClass(this.app);
-    const currentUser = User.current();
+
+    const data = res.body as IUserData;
+    this.data.sessionToken = data.sessionToken;
+
+    const currentUser = UserClass.current(this.app);
+    if (currentUser?.objectId === this.objectId) {
+      const userKV = JSON.parse(this.app._kvGet(KEY_CURRENT_USER));
+      userKV.sessionToken = this.sessionToken;
+      this.app._kvSet(KEY_CURRENT_USER, JSON.stringify(userKV));
+      this.app.setSessionToken(this.sessionToken);
+    }
   }
 }

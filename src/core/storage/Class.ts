@@ -6,7 +6,6 @@ import {
   IClass,
   IObjectAddOption,
   IObject,
-  IUser,
   IUserData,
   IUserLoginWithAuthDataOption,
   IUserLoginWithAuthDataAndUnionIdOption,
@@ -15,7 +14,7 @@ import {
   IUserClass,
 } from '../types';
 import { ObjectDecoder, ObjectEncoder } from './encoding';
-import { removeReservedKeys, HTTPRequest } from '../utils';
+import { removeReservedKeys, HTTPRequest, assert } from '../utils';
 import { v4 as uuid } from 'uuid';
 
 export class Class extends Query implements IClass {
@@ -44,13 +43,18 @@ export class Class extends Query implements IClass {
 }
 
 export class UserClass extends Class implements IUserClass {
-  private _currentUser: IUser;
-
   constructor(app: App) {
     super(app, '_User');
   }
 
-  static current(app: App): IUser {
+  static _setCurrent(app: App, user: User): void {
+    user.setApp(app);
+    const userStr = JSON.stringify(ObjectEncoder.encode(user));
+    app._kvSet(KEY_CURRENT_USER, userStr);
+    app.setSessionToken(user.sessionToken);
+  }
+
+  static current(app: App): User {
     const userStr = app._kvGet(KEY_CURRENT_USER);
     if (userStr) {
       const user = ObjectDecoder.decode(JSON.parse(userStr)) as User;
@@ -60,25 +64,19 @@ export class UserClass extends Class implements IUserClass {
     return null;
   }
 
-  object(id: string): IUser {
+  object(id: string): User {
     return new User(id, this.app);
   }
 
-  private _setCurrent(user: IUser): void {
-    this._currentUser = user;
-    const userStr = JSON.stringify(ObjectEncoder.encode(user));
-    this.app._kvSet(KEY_CURRENT_USER, userStr);
-    this.app.setSessionToken(user.data.sessionToken as string);
+  _setCurrent(user: User): void {
+    UserClass._setCurrent(this.app, user);
   }
 
-  current(): IUser {
-    if (!this._currentUser) {
-      this._currentUser = UserClass.current(this.app);
-    }
-    return this._currentUser;
+  current(): User {
+    return UserClass.current(this.app);
   }
 
-  async become(sessionToken: string): Promise<IUser> {
+  async become(sessionToken: string): Promise<User> {
     const res = await this.app._uluru(
       new HTTPRequest({ path: '/1.1/users/me' }),
       { sessionToken }
@@ -92,8 +90,19 @@ export class UserClass extends Class implements IUserClass {
     return user;
   }
 
-  async signUp(data: IUserData, option?: IObjectAddOption): Promise<IUser> {
-    const user = (await this.add(data, option)) as IUser;
+  async signUp(data: IUserData, option?: IAuthOption): Promise<User> {
+    assert(data.username, 'The username must be provided');
+    assert(data.password, 'The password must be provided');
+    const res = await this.app._uluru(
+      new HTTPRequest({
+        method: 'POST',
+        path: '/1.1/users',
+        body: data,
+      }),
+      option
+    );
+    const _data = res.body as IUserData;
+    const user = ObjectDecoder.decode(_data, this.className) as User;
     this._setCurrent(user);
     return user;
   }
@@ -101,14 +110,14 @@ export class UserClass extends Class implements IUserClass {
   async signUpOrLogInWithMobilePhone(
     mobilePhoneNumber: string,
     smsCode: string,
-    data: Record<string, unknown>,
-    option?: IAuthOption // TODO
-  ): Promise<IUser> {
+    data?: Record<string, unknown>,
+    option?: IAuthOption
+  ): Promise<User> {
     data = Object.assign({}, data, { mobilePhoneNumber, smsCode });
-    return this.signUp(data);
+    return this.signUp(data, option);
   }
 
-  private async _logInWithData(data: IUserData): Promise<IUser> {
+  private async _logInWithData(data: IUserData): Promise<User> {
     const res = await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
@@ -119,35 +128,34 @@ export class UserClass extends Class implements IUserClass {
 
     const _data = res.body as IUserData;
     const user = ObjectDecoder.decode(_data, this.className) as User;
-    user.setApp(this.app);
     this._setCurrent(user);
 
     return user;
   }
 
-  logIn(username: string, password: string): Promise<IUser> {
+  logIn(username: string, password: string): Promise<User> {
     return this._logInWithData({ username, password });
   }
 
-  logInAnonymously(): Promise<IUser> {
+  logInAnonymously(): Promise<User> {
     return this.logInWithAuthData('anonymous', { id: uuid() });
   }
 
-  logInWithEmail(email: string, password: string): Promise<IUser> {
+  logInWithEmail(email: string, password: string): Promise<User> {
     return this._logInWithData({ email, password });
   }
 
   logInWithMobilePhone(
     mobilePhoneNumber: string,
     password: string
-  ): Promise<IUser> {
+  ): Promise<User> {
     return this._logInWithData({ mobilePhoneNumber, password });
   }
 
   logInWithMobilePhoneSmsCode(
     mobilePhoneNumber: string,
     smsCode: string
-  ): Promise<IUser> {
+  ): Promise<User> {
     return this._logInWithData({ mobilePhoneNumber, smsCode });
   }
 
@@ -155,7 +163,7 @@ export class UserClass extends Class implements IUserClass {
     platform: string,
     authData: Record<string, unknown>,
     option?: IUserLoginWithAuthDataOption
-  ): Promise<IUser> {
+  ): Promise<User> {
     const req = new HTTPRequest({
       method: 'POST',
       path: '/1.1/users',
@@ -168,18 +176,18 @@ export class UserClass extends Class implements IUserClass {
 
     const data = res.body as IObjectData;
     const user = ObjectDecoder.decode(data, this.className) as User;
-    user.setApp(this.app);
     this._setCurrent(user);
 
     return user;
   }
 
+  // TODO: remove this function
   logInWithAuthDataAndUnionId(
     platform: string,
     authData: Record<string, unknown>,
     unionId: string,
     option: IUserLoginWithAuthDataAndUnionIdOption
-  ): Promise<IUser> {
+  ): Promise<User> {
     authData = Object.assign({}, authData, {
       platform: option?.unionIdPlatform ?? 'weixin',
       main_account: option?.asMainAccount ?? false,
@@ -189,7 +197,6 @@ export class UserClass extends Class implements IUserClass {
   }
 
   logOut(): void {
-    this._currentUser = null;
     this.app.setSessionToken(null);
     this.app._kvRemove(KEY_CURRENT_USER);
   }
@@ -282,7 +289,7 @@ export class UserClass extends Class implements IUserClass {
     await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
-        path: '/1.1/resetPasswordBySmsCode/' + code,
+        path: '/1.1/verifyMobilePhone/' + code,
       })
     );
   }
