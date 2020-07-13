@@ -23,7 +23,7 @@ describe('UserClass', function () {
         sessionToken: 'test-session',
         username: 'test',
       };
-      UserClass._setCurrent(testApp, user);
+      UserClass._setCurrentUser(testApp, user);
       const userObj = JSON.parse(testApp._kvGet(KEY_CURRENT_USER));
       userObj.sessionToken.should.eql('test-session');
       userObj.objectId.should.eql('test-id');
@@ -37,7 +37,7 @@ describe('UserClass', function () {
         KEY_CURRENT_USER,
         '{"sessionToken":"test-session","objectId":"test-id","username":"test","className":"_User"}'
       );
-      const user = UserClass.current(testApp);
+      const user = UserClass._getCurrentUser(testApp);
       user.objectId.should.eql('test-id');
       user.sessionToken.should.eql('test-session');
       user.data.username.should.eql('test');
@@ -100,8 +100,9 @@ describe('UserClass', function () {
       });
       await User.signUp({ username: 'test', password: 'secret' });
       platform.popRequest();
-      User.current().objectId.should.eql(objectId);
-      User.current().data.username.should.eql('test');
+      const currentUser = User.current();
+      currentUser.objectId.should.eql(objectId);
+      currentUser.data.username.should.eql('test');
     });
   });
 
@@ -129,8 +130,9 @@ describe('UserClass', function () {
       const _logInWithData = Reflect.get(User, '_logInWithData').bind(User);
       await _logInWithData({});
       platform.popRequest();
-      User.current().objectId.should.eql(objectId);
-      User.current().data.username.should.eql('test');
+      const currentUser = User.current();
+      currentUser.objectId.should.eql(objectId);
+      currentUser.data.username.should.eql('test');
     });
   });
 

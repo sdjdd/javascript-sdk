@@ -94,13 +94,13 @@ describe('User', function () {
     it('should not update sessionToken of App when currentUser is not this', async function () {
       const currentUser = new User('test-current-user-id', testApp);
       currentUser.data = { sessionToken: 'test-current-session' };
-      UserClass._setCurrent(testApp, currentUser);
+      UserClass._setCurrentUser(testApp, currentUser);
       platform.pushResponse({
         status: 200,
         body: { sessionToken: 'new-session' },
       });
       await user.updatePassword('old-password', 'new-password');
-      UserClass.current(testApp).sessionToken.should.eql(
+      UserClass._getCurrentUser(testApp).sessionToken.should.eql(
         'test-current-session'
       );
       testApp.getSessionToken().should.eql('test-current-session');
@@ -108,13 +108,13 @@ describe('User', function () {
 
     it('should update sessionToken of App when currentUser is this', async function () {
       user.data = { sessionToken: 'test-current-session' };
-      UserClass._setCurrent(testApp, user);
+      UserClass._setCurrentUser(testApp, user);
       platform.pushResponse({
         status: 200,
         body: { sessionToken: 'new-session' },
       });
       await user.updatePassword('old-password', 'new-password');
-      UserClass.current(testApp).sessionToken.should.eql('new-session');
+      UserClass._getCurrentUser(testApp).sessionToken.should.eql('new-session');
       testApp.getSessionToken().should.eql('new-session');
     });
   });

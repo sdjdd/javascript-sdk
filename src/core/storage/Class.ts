@@ -1,3 +1,4 @@
+import { v4 as uuid } from 'uuid';
 import { LCObject, User } from './Object';
 import { Query } from './Query';
 import { App, KEY_CURRENT_USER } from '../App';
@@ -5,7 +6,6 @@ import {
   IObjectData,
   IClass,
   IObjectAddOption,
-  IObject,
   IUserData,
   IUserLoginWithAuthDataOption,
   IUserLoginWithAuthDataAndUnionIdOption,
@@ -15,16 +15,15 @@ import {
 } from '../types';
 import { ObjectDecoder, ObjectEncoder } from './encoding';
 import { removeReservedKeys, HTTPRequest, assert } from '../utils';
-import { v4 as uuid } from 'uuid';
 
 export class Class extends Query implements IClass {
   app: App;
 
-  object(id: string): IObject {
+  object(id: string): LCObject {
     return new LCObject(this.className, id, this.app);
   }
 
-  async add(data: IObjectData, option?: IObjectAddOption): Promise<IObject> {
+  async add(data: IObjectData, option?: IObjectAddOption): Promise<LCObject> {
     removeReservedKeys(data);
     const req = new HTTPRequest({
       method: 'POST',
@@ -34,7 +33,6 @@ export class Class extends Query implements IClass {
     if (option?.fetch) {
       req.query.fetchWhenSave = 'true';
     }
-
     const res = await this.app._uluru(req);
 
     const _data = res.body as IObjectData;
@@ -47,14 +45,14 @@ export class UserClass extends Class implements IUserClass {
     super(app, '_User');
   }
 
-  static _setCurrent(app: App, user: User): void {
+  static _setCurrentUser(app: App, user: User): void {
     user.setApp(app);
     const userStr = JSON.stringify(ObjectEncoder.encode(user));
     app._kvSet(KEY_CURRENT_USER, userStr);
     app.setSessionToken(user.sessionToken);
   }
 
-  static current(app: App): User {
+  static _getCurrentUser(app: App): User {
     const userStr = app._kvGet(KEY_CURRENT_USER);
     if (userStr) {
       const user = ObjectDecoder.decode(JSON.parse(userStr)) as User;
@@ -69,11 +67,11 @@ export class UserClass extends Class implements IUserClass {
   }
 
   _setCurrent(user: User): void {
-    UserClass._setCurrent(this.app, user);
+    UserClass._setCurrentUser(this.app, user);
   }
 
   current(): User {
-    return UserClass.current(this.app);
+    return UserClass._getCurrentUser(this.app);
   }
 
   async become(sessionToken: string): Promise<User> {
@@ -86,7 +84,6 @@ export class UserClass extends Class implements IUserClass {
     const user = ObjectDecoder.decode(data, this.className) as User;
     user.setApp(this.app);
     this._setCurrent(user);
-
     return user;
   }
 
@@ -125,11 +122,9 @@ export class UserClass extends Class implements IUserClass {
         body: data,
       })
     );
-
     const _data = res.body as IUserData;
     const user = ObjectDecoder.decode(_data, this.className) as User;
     this._setCurrent(user);
-
     return user;
   }
 
@@ -177,7 +172,6 @@ export class UserClass extends Class implements IUserClass {
     const data = res.body as IObjectData;
     const user = ObjectDecoder.decode(data, this.className) as User;
     this._setCurrent(user);
-
     return user;
   }
 

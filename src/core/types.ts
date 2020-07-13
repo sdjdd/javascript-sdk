@@ -166,3 +166,8 @@ export interface IUserLoginWithAuthDataAndUnionIdOption
 export interface IAuthDataWithCaptchaToken extends IAuthOption {
   validateToken?: string;
 }
+
+export interface IOperation {
+  __op: string;
+  [key: string]: unknown;
+}

@@ -195,7 +195,7 @@ export class User extends LCObject implements IUser {
     const data = res.body as IUserData;
     this.data.sessionToken = data.sessionToken;
 
-    const currentUser = UserClass.current(this.app);
+    const currentUser = UserClass._getCurrentUser(this.app);
     if (currentUser?.objectId === this.objectId) {
       const userKV = JSON.parse(this.app._kvGet(KEY_CURRENT_USER));
       userKV.sessionToken = this.sessionToken;
