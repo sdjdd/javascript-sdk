@@ -1,7 +1,8 @@
 import { PlatformSupport } from './Platform';
 import { IAppInfo, IAuthOption } from './types';
-import { log, UluruError, HTTPRequest } from './utils';
+import { log, HTTPRequest, fail } from './utils';
 import { IPlatform, IHTTPResponse } from '../adapters';
+import { UluruError } from './errors';
 
 export const KEY_CURRENT_USER = 'current-user';
 
@@ -9,6 +10,7 @@ export class App {
   info: IAppInfo;
   platform: IPlatform;
 
+  private _cache: Record<string, unknown> = {};
   private _sessionToken: string;
   private _useMasterKey: boolean;
 
@@ -30,22 +32,20 @@ export class App {
 
   useMasterKey(enable: boolean): void {
     if (enable && !this.info.masterKey) {
-      throw new Error('The masterKey is not provided');
+      fail('The masterKey is not provided');
     }
     this._useMasterKey = enable;
   }
 
   getSessionToken(): string {
-    if (!this._sessionToken && this._sessionToken !== '') {
+    if (!this._sessionToken) {
       const userStr = this._kvGet(KEY_CURRENT_USER);
       if (userStr) {
-        const user = JSON.parse(userStr);
-        this._sessionToken = user.sessionToken;
-      } else {
-        this._sessionToken = '';
+        const userData = JSON.parse(userStr);
+        this._sessionToken = userData.sessionToken;
       }
     }
-    return this._sessionToken;
+    return this._sessionToken || null;
   }
 
   setSessionToken(sessionToken: string): void {
@@ -73,7 +73,7 @@ export class App {
     }
     if (useMasterKey) {
       if (!this.info.masterKey) {
-        throw new Error('The masterKey is not provided');
+        fail('The masterKey is not provided');
       }
       req.header['X-LC-Key'] = this.info.masterKey + ',master';
     } else {
@@ -110,5 +110,21 @@ export class App {
   _kvRemove(key: string): void {
     log('LC:KV:rm', key);
     this.platform.storage.remove(this.info.appId + ':' + key);
+  }
+
+  _cacheSet(key: string, value: unknown): void {
+    log('LC:Cache:set', '%s = %o', key, value);
+    this._cache[key] = value;
+  }
+
+  _cacheGet(key: string): unknown {
+    const value = this._cache[key];
+    log('LC:Cache:get', '%s = %o', key, value);
+    return value;
+  }
+
+  _cacheRemove(key: string): void {
+    log('LC:Cache:rm', key);
+    delete this._cache[key];
   }
 }

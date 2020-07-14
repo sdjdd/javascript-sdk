@@ -21,6 +21,10 @@ export function assert(cond: unknown, msg: string): void {
   }
 }
 
+export function fail(msg: string): never {
+  throw new Error(msg);
+}
+
 export function removeReservedKeys(obj: Record<string, unknown>): void {
   Object.keys(obj).forEach((key) => {
     if (RESERVED_KEYS.has(key)) {
@@ -29,8 +33,12 @@ export function removeReservedKeys(obj: Record<string, unknown>): void {
   });
 }
 
-export class UluruError extends Error {
-  constructor(public code: number, public error: string) {
-    super(`code: ${code}, message: ${error}`);
+export function deleteKey(obj: unknown, key: string): void {
+  if (!obj) return;
+  if (key.includes('.')) {
+    const keys = key.split('.');
+    deleteKey(obj[keys[0]], keys.slice(1).join('.'));
+  } else {
+    delete obj[key];
   }
 }

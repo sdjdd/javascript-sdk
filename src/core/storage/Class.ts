@@ -46,28 +46,32 @@ export class UserClass extends Class implements IUserClass {
   }
 
   static _setCurrentUser(app: App, user: User): void {
-    user.setApp(app);
-    const userStr = JSON.stringify(ObjectEncoder.encode(user));
-    app._kvSet(KEY_CURRENT_USER, userStr);
+    app._kvSet(KEY_CURRENT_USER, JSON.stringify(ObjectEncoder.encode(user)));
+    app._cacheSet(KEY_CURRENT_USER, user);
     app.setSessionToken(user.sessionToken);
   }
 
   static _getCurrentUser(app: App): User {
-    const userStr = app._kvGet(KEY_CURRENT_USER);
-    if (userStr) {
-      const user = ObjectDecoder.decode(JSON.parse(userStr)) as User;
-      user.setApp(app);
-      return user;
+    let user = app._cacheGet(KEY_CURRENT_USER) as User;
+    if (!user) {
+      const userStr = app._kvGet(KEY_CURRENT_USER);
+      if (userStr) {
+        user = ObjectDecoder.decode(JSON.parse(userStr)) as User;
+        user.setApp(app);
+        app._cacheSet(KEY_CURRENT_USER, user);
+      }
     }
-    return null;
+    return user || null;
+  }
+
+  static logOut(app: App): void {
+    app.setSessionToken(null);
+    app._cacheRemove(KEY_CURRENT_USER);
+    app._kvRemove(KEY_CURRENT_USER);
   }
 
   object(id: string): User {
     return new User(id, this.app);
-  }
-
-  _setCurrent(user: User): void {
-    UserClass._setCurrentUser(this.app, user);
   }
 
   current(): User {
@@ -83,7 +87,7 @@ export class UserClass extends Class implements IUserClass {
     const data = res.body as IObjectData;
     const user = ObjectDecoder.decode(data, this.className) as User;
     user.setApp(this.app);
-    this._setCurrent(user);
+    UserClass._setCurrentUser(this.app, user);
     return user;
   }
 
@@ -100,7 +104,8 @@ export class UserClass extends Class implements IUserClass {
     );
     const _data = res.body as IUserData;
     const user = ObjectDecoder.decode(_data, this.className) as User;
-    this._setCurrent(user);
+    user.setApp(this.app);
+    UserClass._setCurrentUser(this.app, user);
     return user;
   }
 
@@ -124,7 +129,8 @@ export class UserClass extends Class implements IUserClass {
     );
     const _data = res.body as IUserData;
     const user = ObjectDecoder.decode(_data, this.className) as User;
-    this._setCurrent(user);
+    user.setApp(this.app);
+    UserClass._setCurrentUser(this.app, user);
     return user;
   }
 
@@ -171,7 +177,8 @@ export class UserClass extends Class implements IUserClass {
 
     const data = res.body as IObjectData;
     const user = ObjectDecoder.decode(data, this.className) as User;
-    this._setCurrent(user);
+    user.setApp(this.app);
+    UserClass._setCurrentUser(this.app, user);
     return user;
   }
 
@@ -191,8 +198,7 @@ export class UserClass extends Class implements IUserClass {
   }
 
   logOut(): void {
-    this.app.setSessionToken(null);
-    this.app._kvRemove(KEY_CURRENT_USER);
+    UserClass.logOut(this.app);
   }
 
   async requestEmailVerify(email: string): Promise<void> {

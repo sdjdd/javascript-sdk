@@ -75,6 +75,7 @@ describe('User', function () {
       const req = platform.popRequest();
       req.method.should.eql('PUT');
       req.path.should.eql('/1.1/users/test-user-id/updatePassword');
+      req.header['X-LC-Session'].should.eql('test-session');
       req.body.should.eql({
         old_password: 'old-password',
         new_password: 'new-password',

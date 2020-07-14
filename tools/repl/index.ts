@@ -30,8 +30,8 @@ Available Classes:
 
 Available Objects:
 
-  env     - current environment
-  storage - instance of Storage with default App
+  env - current environment
+  db  - instance of Storage with default App
 
 `);
 }

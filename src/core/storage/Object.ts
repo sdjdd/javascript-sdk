@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import { App, KEY_CURRENT_USER } from '../App';
-import { removeReservedKeys, UluruError, HTTPRequest } from '../utils';
+import { removeReservedKeys, HTTPRequest, fail, deleteKey } from '../utils';
 import {
   IObject,
   IGeoPoint,
@@ -11,9 +11,11 @@ import {
   IUser,
   IAuthOption,
   IUserData,
+  IOperation,
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './encoding';
 import { UserClass } from './Class';
+import { UluruError } from '../errors';
 
 export class LCObject implements IObject {
   app: App;
@@ -80,7 +82,7 @@ export class LCObject implements IObject {
   async update(
     data: IObjectData,
     option?: IObjectUpdateOption
-  ): Promise<IObject> {
+  ): Promise<LCObject> {
     removeReservedKeys(data);
 
     const req = new HTTPRequest({
@@ -155,11 +157,16 @@ export class User extends LCObject implements IUser {
   }
 
   get sessionToken(): string {
-    return this.data.sessionToken as string;
+    return this.data?.sessionToken as string;
   }
 
   protected get _path(): string {
     return '/1.1/users/' + this.objectId;
+  }
+
+  isCurrentUser(): boolean {
+    const currentUser = UserClass._getCurrentUser(this.app);
+    return this.objectId === currentUser?.objectId;
   }
 
   isAnonymous(): boolean {
@@ -191,23 +198,97 @@ export class User extends LCObject implements IUser {
     newPassword: string,
     option?: IAuthOption
   ): Promise<void> {
+    if (!this.sessionToken) {
+      fail('The user is not logged in');
+    }
+
     const req = new HTTPRequest({
       method: 'PUT',
       path: `/1.1/users/${this.objectId}/updatePassword`,
-      header: { 'X-LC-Session': this.sessionToken },
       body: { old_password: oldPassword, new_password: newPassword },
     });
-    const res = await this.app._uluru(req, option);
+    const res = await this.app._uluru(req, {
+      sessionToken: this.sessionToken,
+      ...option,
+    });
 
     const data = res.body as IUserData;
     this.data.sessionToken = data.sessionToken;
 
-    const currentUser = UserClass._getCurrentUser(this.app);
-    if (currentUser?.objectId === this.objectId) {
+    if (this.isCurrentUser()) {
+      this.app.setSessionToken(null);
+      this.app._cacheRemove(KEY_CURRENT_USER);
+
       const userKV = JSON.parse(this.app._kvGet(KEY_CURRENT_USER));
       userKV.sessionToken = this.sessionToken;
       this.app._kvSet(KEY_CURRENT_USER, JSON.stringify(userKV));
-      this.app.setSessionToken(this.sessionToken);
+    }
+  }
+
+  async get(option?: IObjectGetOption): Promise<User> {
+    const req = new HTTPRequest({ path: this._path });
+    if (option?.include) {
+      req.query.include = option.include.join(',');
+    }
+    const res = await this.app._uluru(req);
+
+    const data = res.body as IUserData;
+    if (Object.keys(data).length === 0) {
+      fail(`User with objectId(${this.objectId}) is not exists`);
+    }
+
+    const user = ObjectDecoder.decode(data, this.className) as User;
+    user.setApp(this.app);
+
+    if (user.isCurrentUser()) {
+      this.app._cacheRemove(KEY_CURRENT_USER);
+
+      const userKV = JSON.parse(this.app._kvGet(KEY_CURRENT_USER));
+      Object.assign(userKV, data);
+      this.app._kvSet(KEY_CURRENT_USER, JSON.stringify(userKV));
+    }
+    return user;
+  }
+
+  async update(data: IUserData, option?: IObjectUpdateOption): Promise<User> {
+    removeReservedKeys(data);
+
+    const req = new HTTPRequest({
+      method: 'PUT',
+      path: this._path,
+      body: ObjectEncoder.encodeData(data),
+    });
+    if (option?.include) {
+      req.query.include = option.include.join(',');
+    }
+    if (option?.fetch) {
+      req.query.fetchWhenSave = 'true';
+    }
+    const res = await this.app._uluru(req);
+
+    const _data = res.body as IUserData;
+    const user = ObjectDecoder.decode(_data, this.className) as User;
+
+    if (this.isCurrentUser()) {
+      this.app._cacheRemove(KEY_CURRENT_USER);
+
+      const userKV = JSON.parse(this.app._kvGet(KEY_CURRENT_USER));
+      Object.entries(data).forEach(([key, value]) => {
+        const op = value as IOperation;
+        if (op?.__op === 'Delete') {
+          deleteKey(userKV, key);
+        }
+      });
+      Object.assign(userKV, _data);
+      this.app._kvSet(KEY_CURRENT_USER, JSON.stringify(userKV));
+    }
+    return user;
+  }
+
+  async delete(option?: IAuthOption): Promise<void> {
+    await super.delete(option);
+    if (this.isCurrentUser()) {
+      UserClass.logOut(this.app);
     }
   }
 }
