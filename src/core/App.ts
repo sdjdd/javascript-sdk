@@ -97,13 +97,13 @@ export class App {
   }
 
   _kvSet(key: string, value: string): void {
-    log('LC:KV:set', '%s = %s', key, value);
+    log('LC:KV:set', '%s = %O', key, value);
     this.platform.storage.set(this.info.appId + ':' + key, value);
   }
 
   _kvGet(key: string): string {
     const value = this.platform.storage.get(this.info.appId + ':' + key);
-    log('LC:KV:get', '%s = %s', key, value);
+    log('LC:KV:get', '%s = %O', key, value);
     return value;
   }
 

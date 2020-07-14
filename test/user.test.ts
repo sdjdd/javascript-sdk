@@ -32,7 +32,7 @@ describe('User', function () {
       user.isAnonymous().should.false();
     });
 
-    it('should return true when #data.authData.anonymous is not undefined', function () {
+    it('should return true when #data.authData.anonymous is set', function () {
       user.data = { authData: { anonymous: 'anonymous-id' } };
       user.isAnonymous().should.true();
     });

@@ -35,7 +35,7 @@ export class Query implements IQuery {
 
   static and(...queries: Query[]): Query {
     if (queries.length < 2) {
-      throw new Error('The and method receive at least 2 queries');
+      throw new Error('The and method require at least 2 queries');
     }
 
     const className = queries[0].className;
@@ -105,7 +105,6 @@ export class Query implements IQuery {
     return query;
   }
 
-  // TODO: refactor
   where(key: string, cond: Condition, value?: unknown): Query {
     let where: unknown;
     switch (cond) {
@@ -159,20 +158,18 @@ export class Query implements IQuery {
 
       case 'size-is':
         if (typeof value !== 'number') {
-          throw new TypeError(
-            'condition "lengthIs" receives a number parameter'
-          );
+          throw new TypeError('Condition "size-is" require a number');
         }
         where = { $size: value };
         break;
 
       case 'in': {
         if (!(value instanceof Query)) {
-          throw new Error('TODO');
+          throw new TypeError('Condition "in" require a Query');
         }
         if (value._select.size > 0) {
           if (value._select.size !== 1) {
-            throw new Error('TODO'); // TODO
+            throw new Error('The sub-query expect select only one key');
           }
           where = {
             $select: {
@@ -261,13 +258,10 @@ export class Query implements IQuery {
     const req = this._makeRequest();
     req.query.count = '1';
     req.query.limit = '0';
-
     const res = await this.app._uluru(req);
-
     return (res.body as { count: number }).count;
   }
 
-  // TODO: rafactor
   _parseWhere(): unknown {
     if (this._or.length > 0) {
       const or = [...this._or];
@@ -288,10 +282,22 @@ export class Query implements IQuery {
     }
   }
 
+  toJSON(): unknown {
+    return this._parseWhere();
+  }
+
+  toString(): string {
+    const str = JSON.stringify(this);
+    if (str === '{}') {
+      return '';
+    }
+    return str;
+  }
+
   _makeRequest(): HTTPRequest {
     const req = new HTTPRequest({ path: `/1.1/classes/${this.className}` });
-    const where = JSON.stringify(this._parseWhere());
-    if (where != '{}') {
+    const where = this.toString();
+    if (where) {
       req.query.where = where;
     }
     if (this._limit !== undefined) {
@@ -318,7 +324,6 @@ export class Query implements IQuery {
     if (!results) {
       return [];
     }
-
     return results.map((result) =>
       ObjectDecoder.decode(result, this.className).setApp(this.app)
     );

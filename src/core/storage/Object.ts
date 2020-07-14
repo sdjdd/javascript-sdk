@@ -91,6 +91,9 @@ export class LCObject implements IObject {
     if (option?.include) {
       req.query.include = option.include.join(',');
     }
+    if (option?.fetch) {
+      req.query.fetchWhenSave = 'true';
+    }
     const res = await this.app._uluru(req);
 
     const obj = new LCObject(this.className, this.objectId, this.app);
@@ -103,7 +106,7 @@ export class LCObject implements IObject {
     await this.app._uluru(req, option);
   }
 
-  async get(option?: IObjectGetOption): Promise<IObject> {
+  async get(option?: IObjectGetOption): Promise<LCObject> {
     const req = new HTTPRequest({ path: this._path });
     if (option?.include) {
       req.query.include = option.include.join(',');
@@ -153,6 +156,10 @@ export class User extends LCObject implements IUser {
 
   get sessionToken(): string {
     return this.data.sessionToken as string;
+  }
+
+  protected get _path(): string {
+    return '/1.1/users/' + this.objectId;
   }
 
   isAnonymous(): boolean {
