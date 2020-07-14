@@ -1,7 +1,12 @@
 import { PlatformSupport } from './Platform';
 import { IAppInfo, IAuthOption } from './types';
 import { log, HTTPRequest, fail } from './utils';
-import { IPlatform, IHTTPResponse } from '../adapters';
+import {
+  IPlatform,
+  IHTTPResponse,
+  IUploadRequest,
+  ProgressListener,
+} from '../adapters';
 import { UluruError } from './errors';
 
 export const KEY_CURRENT_USER = 'current-user';
@@ -94,6 +99,10 @@ export class App {
       throw new UluruError(err.code, err.error);
     }
     return res;
+  }
+
+  _upload(req: IUploadRequest, pl?: ProgressListener): Promise<IHTTPResponse> {
+    return this.platform.upload(req, pl);
   }
 
   _kvSet(key: string, value: string): void {

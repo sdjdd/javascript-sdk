@@ -1,9 +1,10 @@
 import { Class, UserClass } from './Class';
-import { FileUploader, QiniuFileProvider } from '../FileUploader';
-import { File } from './Object';
+import { QiniuFileProvider } from './file-providers';
 import { App } from '../App';
 import { Batch } from './Batch';
-import { IClass } from '../types';
+import { IClass, IFile, IFileProvider, IUploadOption } from '../types';
+import { IHTTPResponse } from '../../adapters';
+import { HTTPRequest } from '../utils';
 
 export class Storage {
   constructor(public app: App) {}
@@ -20,7 +21,7 @@ export class Storage {
     return new Batch(this.app);
   }
 
-  getFileProvider(name: string): FileUploader {
+  getFileProvider(name: string): IFileProvider {
     switch (name) {
       case 'qiniu':
         return new QiniuFileProvider(this.app);
@@ -29,29 +30,49 @@ export class Storage {
     }
   }
 
-  // async upload(file: File, keepFileName = false): Promise<HTTPResponse> {
-  //   const tokens = await this.api.getFileTokens(file.key, file.name, {
-  //     keepFileName,
-  //     mime: file.mime,
-  //   });
-  //   const provider = this.getFileProvider(tokens.provider);
-  //   const { upload_url, key, token } = tokens;
+  async upload(file: IFile, option?: IUploadOption): Promise<IHTTPResponse> {
+    const req = new HTTPRequest({
+      method: 'POST',
+      path: '/1.1/fileTokens',
+      body: {
+        key: file.key,
+        name: file.name,
+        ACL: undefined,
+        mime_type: file.mime,
+        keep_file_name: option?.keepFileName || false,
+        metaData: undefined, // metaData is not necessary
+      },
+    });
+    const res = await this.app._uluru(req);
+    const tokens = res.body as Record<string, string>;
 
-  //   let res: HTTPResponse;
-  //   let result = false;
-  //   let qiniuError: unknown;
-  //   try {
-  //     res = await provider.upload(file, upload_url, key, token);
-  //     file.objectId = tokens.objectId;
-  //     result = true;
-  //   } catch (err) {
-  //     qiniuError = err;
-  //   }
-  //   await this.api.handleFileCallback(token, result);
+    const provider = this.getFileProvider(tokens.provider);
+    const { upload_url, key, token } = tokens;
 
-  //   if (!result) {
-  //     throw qiniuError;
-  //   }
-  //   return res;
-  // }
+    try {
+      const providerRes = await provider.upload(
+        file,
+        upload_url,
+        key,
+        token,
+        option?.onProgress
+      );
+      file.objectId = tokens.objectId;
+      await this._invokeFileCallback(token);
+      return providerRes;
+    } catch (err) {
+      await this._invokeFileCallback(token);
+      throw err;
+    }
+  }
+
+  _invokeFileCallback(token: string, success = true): Promise<IHTTPResponse> {
+    return this.app._uluru(
+      new HTTPRequest({
+        method: 'POST',
+        path: '/1.1/fileCallback',
+        body: { token, result: success },
+      })
+    );
+  }
 }

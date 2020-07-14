@@ -3,7 +3,15 @@ import { App, Storage, PlatformSupport, debug } from '../../src/core';
 import { node } from '../../src/node';
 
 export { env };
-export { App, Storage, ACL, Operation, Query, LCObject } from '../../src/core';
+export {
+  App,
+  Storage,
+  ACL,
+  Operation,
+  Query,
+  LCObject,
+  File,
+} from '../../src/core';
 
 export { ObjectDecoder, ObjectEncoder } from '../../src/core/storage/encoding';
 

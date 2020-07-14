@@ -1,10 +1,14 @@
 import superagent from 'superagent';
+
 import {
   IHTTPRequest,
   IHTTPResponse,
   IAbortable,
   IKVStorage,
   IPlatform,
+  IFileData,
+  IUploadRequest,
+  ProgressListener,
 } from '../adapters';
 
 async function request(
@@ -46,23 +50,41 @@ async function request(
 }
 
 async function upload(
-  method: string,
-  url: string,
-  files: { field: string; name: string; data: string }[],
-  formData?: Record<string, string>
-) {
-  const req = superagent(method, url);
+  req: IUploadRequest,
+  progressListener?: ProgressListener
+): Promise<IHTTPResponse> {
+  const superReq = superagent(req.method, req.url);
+
+  let files: IFileData[];
+  if (Array.isArray(req.file)) {
+    files = req.file;
+  } else {
+    files = [req.file];
+  }
+
   files.forEach((file) => {
-    req.attach(file.field, Buffer.from(file.data, 'base64'), {
+    let fileData: Buffer;
+    if (typeof file.data === 'string') {
+      fileData = Buffer.from(file.data, 'base64');
+    } else {
+      fileData = Buffer.from(file.data);
+    }
+    superReq.attach(file.field, fileData, {
       filename: file.name,
       // contentType: ''
     });
   });
-  const res = await req.field(formData);
+
+  if (progressListener) {
+    superReq.on('progress', progressListener);
+  }
+
+  // eslint-disable-next-line
+  const res = await superReq.field(req.formData as any);
   return {
     status: res.status,
     header: res.header,
-    body: res.body || res.text,
+    body: Object.keys(res.body) ? res.body : res.text,
   };
 }
 

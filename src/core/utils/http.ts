@@ -1,4 +1,9 @@
-import { IHTTPRequest, HTTPHeader } from '../../adapters';
+import {
+  IHTTPRequest,
+  HTTPHeader,
+  IUploadRequest,
+  IFileData,
+} from '../../adapters';
 
 export interface IHTTPRequestInitOption {
   method?: string;
@@ -7,6 +12,12 @@ export interface IHTTPRequestInitOption {
   query?: Record<string, string>;
   header?: HTTPHeader;
   body?: unknown;
+}
+
+export interface IUploadRequestInitOption
+  extends Omit<IHTTPRequestInitOption, 'body'> {
+  file: IFileData | IFileData[];
+  formData?: Record<string, unknown>;
 }
 
 export class HTTPRequest implements IHTTPRequest {
@@ -39,5 +50,16 @@ export class HTTPRequest implements IHTTPRequest {
       url += sp + qstr;
     }
     return url;
+  }
+}
+
+export class UploadRequest extends HTTPRequest implements IUploadRequest {
+  file: IFileData | IFileData[];
+  formData?: Record<string, unknown>;
+
+  constructor(option?: IUploadRequestInitOption) {
+    super(option);
+    this.file = option?.file;
+    this.formData = option?.formData;
   }
 }

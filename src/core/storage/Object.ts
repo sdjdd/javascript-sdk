@@ -12,6 +12,7 @@ import {
   IAuthOption,
   IUserData,
   IOperation,
+  IFile,
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './encoding';
 import { UserClass } from './Class';
@@ -124,11 +125,11 @@ export class LCObject implements IObject {
   }
 }
 
-export class File {
-  __type = 'File';
+export class File implements IFile {
+  __type: 'File' = 'File';
   key: string;
   name: string;
-  data: string;
+  base64Data: string;
   mime: string;
   objectId: string;
 
@@ -140,7 +141,7 @@ export class File {
       this.key = uuid();
     }
     this.name = name;
-    this.data = data;
+    this.base64Data = data;
   }
 }
 

@@ -13,6 +13,11 @@ export interface IHTTPResponse {
   body?: unknown;
 }
 
+export interface IUploadRequest extends Omit<IHTTPRequest, 'body'> {
+  file: IFileData | IFileData[];
+  formData?: Record<string, unknown>;
+}
+
 export interface IAbortable {
   signal?: { onabort(): void };
 }
@@ -28,11 +33,17 @@ export interface IFileData {
   data: string | ArrayBuffer;
 }
 
+export interface IProgressEvent {
+  total: number;
+  loaded: number;
+  percent: number;
+}
+
+export type ProgressListener = (e: IProgressEvent) => void;
+
 export type Upload = (
-  method: string,
-  url: string,
-  files: IFileData[],
-  formData?: Record<string, string>
+  req: IUploadRequest,
+  progressListener?: ProgressListener
 ) => Promise<IHTTPResponse>;
 
 export interface IKVStorage {

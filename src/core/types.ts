@@ -1,3 +1,5 @@
+import { IHTTPResponse, ProgressListener } from '../adapters';
+
 export interface IAppInfo {
   appId: string;
   appKey: string;
@@ -86,6 +88,15 @@ export interface IGeoPoint {
   longitude: number;
 }
 
+export interface IFile {
+  __type: 'File';
+  key: string;
+  name: string;
+  base64Data: string;
+  mime: string;
+  objectId: string;
+}
+
 export interface IUserClass extends IClass {
   object(id: string): IUser;
   current(): IUser;
@@ -170,4 +181,19 @@ export interface IAuthDataWithCaptchaToken extends IAuthOption {
 export interface IOperation {
   __op: string;
   [key: string]: unknown;
+}
+
+export interface IFileProvider {
+  upload(
+    file: IFile,
+    url: string,
+    key: string,
+    token: string,
+    progressListener?: ProgressListener
+  ): Promise<IHTTPResponse>;
+}
+
+export interface IUploadOption {
+  keepFileName?: boolean;
+  onProgress?: ProgressListener;
 }
