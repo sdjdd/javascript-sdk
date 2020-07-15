@@ -3,7 +3,6 @@ import { LCObject, User } from './Object';
 import { Query } from './Query';
 import { App, KEY_CURRENT_USER } from '../App';
 import {
-  IObjectData,
   IClass,
   IObjectAddOption,
   IUserData,
@@ -12,6 +11,8 @@ import {
   IAuthDataWithCaptchaToken,
   IAuthOption,
   IUserClass,
+  IObjectData,
+  IObjectDataRaw,
 } from '../types';
 import { ObjectDecoder, ObjectEncoder } from './encoding';
 import { removeReservedKeys, HTTPRequest, assert } from '../utils';
@@ -35,7 +36,7 @@ export class Class extends Query implements IClass {
     }
     const res = await this.app._uluru(req);
 
-    const _data = res.body as IObjectData;
+    const _data = res.body as IObjectDataRaw;
     return ObjectDecoder.decode(_data, this.className).setApp(this.app);
   }
 }
@@ -84,7 +85,7 @@ export class UserClass extends Class implements IUserClass {
       { sessionToken }
     );
 
-    const data = res.body as IObjectData;
+    const data = res.body as IObjectDataRaw;
     const user = ObjectDecoder.decode(data, this.className) as User;
     user.setApp(this.app);
     UserClass._setCurrentUser(this.app, user);
@@ -94,15 +95,13 @@ export class UserClass extends Class implements IUserClass {
   async signUp(data: IUserData, option?: IAuthOption): Promise<User> {
     assert(data.username, 'The username must be provided');
     assert(data.password, 'The password must be provided');
-    const res = await this.app._uluru(
-      new HTTPRequest({
-        method: 'POST',
-        path: '/1.1/users',
-        body: data,
-      }),
-      option
-    );
-    const _data = res.body as IUserData;
+    const req = new HTTPRequest({
+      method: 'POST',
+      path: '/1.1/users',
+      body: data,
+    });
+    const res = await this.app._uluru(req, option);
+    const _data = res.body as IObjectDataRaw;
     const user = ObjectDecoder.decode(_data, this.className) as User;
     user.setApp(this.app);
     UserClass._setCurrentUser(this.app, user);
@@ -127,7 +126,7 @@ export class UserClass extends Class implements IUserClass {
         body: data,
       })
     );
-    const _data = res.body as IUserData;
+    const _data = res.body as IObjectDataRaw;
     const user = ObjectDecoder.decode(_data, this.className) as User;
     user.setApp(this.app);
     UserClass._setCurrentUser(this.app, user);
@@ -175,7 +174,7 @@ export class UserClass extends Class implements IUserClass {
     }
     const res = await this.app._uluru(req);
 
-    const data = res.body as IObjectData;
+    const data = res.body as IObjectDataRaw;
     const user = ObjectDecoder.decode(data, this.className) as User;
     user.setApp(this.app);
     UserClass._setCurrentUser(this.app, user);

@@ -1,6 +1,12 @@
 import { PlatformSupport } from '../src/core';
 import { MemoryStorage } from '../src/node';
-import { IPlatform, IHTTPResponse, IFileData } from '../src/adapters';
+import {
+  IPlatform,
+  IHTTPResponse,
+  IFileData,
+  IUploadOption,
+  IUploadRequest,
+} from '../src/adapters';
 import { HTTPRequest } from '../src/core/utils';
 
 export class TestPlatform implements IPlatform {
@@ -24,6 +30,9 @@ export class TestPlatform implements IPlatform {
   }
 
   popRequest(): HTTPRequest {
+    if (this._requests.length === 0) {
+      throw new Error('No request available');
+    }
     return this._requests.pop();
   }
 
@@ -43,10 +52,8 @@ export class TestPlatform implements IPlatform {
   }
 
   async upload(
-    method: string,
-    url: string,
-    files: IFileData[],
-    formData?: Record<string, string>
+    req: IUploadRequest,
+    option?: IUploadOption
   ): Promise<IHTTPResponse> {
     return {
       status: 200,

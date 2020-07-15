@@ -1,4 +1,8 @@
-import { IHTTPResponse, ProgressListener } from '../adapters';
+import {
+  IHTTPResponse,
+  IUploadOption as IAdapterUploadOption,
+  IRequestOption as IAdapterRequestOption,
+} from '../adapters';
 
 export interface IAppInfo {
   appId: string;
@@ -7,9 +11,13 @@ export interface IAppInfo {
   masterKey?: string;
 }
 
-export interface IAuthOption {
+export interface IAuthOption extends IAdapterRequestOption {
   sessionToken?: string;
   useMasterKey?: boolean;
+}
+
+export interface IQueryFindOption {
+  include?: string[];
 }
 
 export interface IQuery {
@@ -20,7 +28,7 @@ export interface IQuery {
   limit(count: number): IQuery;
   skip(count: number): IQuery;
   orderBy(key: string, rule: 'asc' | 'desc'): IQuery;
-  find(): Promise<IObject[]>;
+  find(option?: IQueryFindOption): Promise<IObject[]>;
   first(): Promise<IObject>;
   count(): Promise<number>;
 }
@@ -39,8 +47,18 @@ export interface IObjectAddOption extends IAuthOption {
 export interface IObjectData {
   className?: string; // pointer only
   objectId?: string;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+  ACL?: IACL;
+  [key: string]: unknown;
+}
+
+export interface IObjectDataRaw {
+  className?: string; // pointer only
+  objectId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  ACL?: Record<string, IACLPrivilege>;
   [key: string]: unknown;
 }
 
@@ -55,10 +73,16 @@ export interface IObjectGetOption {
 export type ACLSubject = '*' | string | IUser;
 export type ACLAction = 'read' | 'write';
 
+export interface IACLPrivilege {
+  read?: boolean;
+  write?: boolean;
+}
+
 export interface IACL {
   allow(subject: '*' | string, action: ACLAction): this;
   deny(subject: '*' | string, action: ACLAction): this;
   can(subject: '*' | string, action: ACLAction): boolean;
+  toJSON(): Record<string, IACLPrivilege>;
 }
 
 export interface IObject {
@@ -90,11 +114,12 @@ export interface IGeoPoint {
 
 export interface IFile {
   __type: 'File';
+  objectId: string;
+  ACL?: IACL;
   key: string;
   name: string;
   base64Data: string;
   mime: string;
-  objectId: string;
 }
 
 export interface IUserClass extends IClass {
@@ -183,17 +208,20 @@ export interface IOperation {
   [key: string]: unknown;
 }
 
+export interface IUploadFileInfo {
+  url: string;
+  key: string;
+  token: string;
+}
+
+export interface IUploadOption extends IAdapterUploadOption, IAuthOption {
+  keepFileName?: boolean;
+}
+
 export interface IFileProvider {
   upload(
     file: IFile,
-    url: string,
-    key: string,
-    token: string,
-    progressListener?: ProgressListener
+    info: IUploadFileInfo,
+    option?: IUploadOption
   ): Promise<IHTTPResponse>;
-}
-
-export interface IUploadOption {
-  keepFileName?: boolean;
-  onProgress?: ProgressListener;
 }

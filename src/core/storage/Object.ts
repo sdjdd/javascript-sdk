@@ -5,7 +5,6 @@ import {
   IObject,
   IGeoPoint,
   IPointer,
-  IObjectData,
   IObjectGetOption,
   IObjectUpdateOption,
   IUser,
@@ -13,10 +12,13 @@ import {
   IUserData,
   IOperation,
   IFile,
+  IObjectData,
+  IObjectDataRaw,
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './encoding';
 import { UserClass } from './Class';
 import { UluruError } from '../errors';
+import { ACL } from './ACL';
 
 export class LCObject implements IObject {
   app: App;
@@ -34,8 +36,8 @@ export class LCObject implements IObject {
     return `/1.1/classes/${this.className}/${this.objectId}`;
   }
 
-  toJSON(): IObjectData {
-    function extractData(obj: LCObject): IObjectData {
+  toJSON(): unknown {
+    function extractData(obj: LCObject): unknown {
       const items: unknown[] = obj.data ? [obj.data] : [];
       while (items.length > 0) {
         const item = items.shift();
@@ -100,7 +102,7 @@ export class LCObject implements IObject {
     const res = await this.app._uluru(req);
 
     const obj = new LCObject(this.className, this.objectId, this.app);
-    obj.data = res.body as IObjectData;
+    obj.data = ObjectDecoder.decodeData(res.body) as IObjectData;
     return obj;
   }
 
@@ -116,7 +118,7 @@ export class LCObject implements IObject {
     }
     const res = await this.app._uluru(req);
 
-    const attr = res.body as IObjectData;
+    const attr = res.body as IObjectDataRaw;
     if (Object.keys(attr).length === 0) {
       throw new Error('objectId not exists');
     }
@@ -132,6 +134,7 @@ export class File implements IFile {
   base64Data: string;
   mime: string;
   objectId: string;
+  ACL?: ACL;
 
   constructor(name: string, data: string) {
     const ext = name.split('.').pop();
@@ -233,7 +236,7 @@ export class User extends LCObject implements IUser {
     }
     const res = await this.app._uluru(req);
 
-    const data = res.body as IUserData;
+    const data = res.body as IObjectDataRaw;
     if (Object.keys(data).length === 0) {
       fail(`User with objectId(${this.objectId}) is not exists`);
     }
@@ -267,7 +270,7 @@ export class User extends LCObject implements IUser {
     }
     const res = await this.app._uluru(req);
 
-    const _data = res.body as IUserData;
+    const _data = res.body as IObjectDataRaw;
     const user = ObjectDecoder.decode(_data, this.className) as User;
 
     if (this.isCurrentUser()) {

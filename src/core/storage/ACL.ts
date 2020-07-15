@@ -1,14 +1,9 @@
-import { ACLAction, ACLSubject } from '../types';
+import { ACLAction, ACLSubject, IACL, IACLPrivilege } from '../types';
 
-export interface ACLPrivilege {
-  read?: boolean;
-  write?: boolean;
-}
+export class ACL implements IACL {
+  private _data: Record<string, IACLPrivilege> = {};
 
-export class ACL {
-  private _data: Record<string, ACLPrivilege> = {};
-
-  static from(data: Record<string, ACLPrivilege>): ACL {
+  static from(data: Record<string, IACLPrivilege>): ACL {
     const acl = new ACL();
     Object.entries(data).forEach(([subject, privilege]) => {
       if (privilege.read) {
@@ -56,7 +51,7 @@ export class ACL {
     return this._data[id] && this._data[id][action];
   }
 
-  toJSON(): unknown {
+  toJSON(): Record<string, IACLPrivilege> {
     return this._data;
   }
 }

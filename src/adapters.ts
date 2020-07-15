@@ -18,19 +18,19 @@ export interface IUploadRequest extends Omit<IHTTPRequest, 'body'> {
   formData?: Record<string, unknown>;
 }
 
-export interface IAbortable {
+export interface IRequestOption {
   signal?: { onabort(): void };
 }
 
 export type Request = (
   req: IHTTPRequest,
-  option?: IAbortable
+  option?: IRequestOption
 ) => Promise<IHTTPResponse>;
 
 export interface IFileData {
-  field: string;
+  field: string; // formFiled
   name: string;
-  data: string | ArrayBuffer;
+  data: string | ArrayBuffer; // base64 or binary
 }
 
 export interface IProgressEvent {
@@ -39,11 +39,15 @@ export interface IProgressEvent {
   percent: number;
 }
 
-export type ProgressListener = (e: IProgressEvent) => void;
+export type ProgressListener = (event: IProgressEvent) => void;
+
+export interface IUploadOption extends IRequestOption {
+  onProgress?: ProgressListener;
+}
 
 export type Upload = (
   req: IUploadRequest,
-  progressListener?: ProgressListener
+  option?: IUploadOption
 ) => Promise<IHTTPResponse>;
 
 export interface IKVStorage {

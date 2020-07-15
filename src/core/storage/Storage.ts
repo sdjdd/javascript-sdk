@@ -43,20 +43,14 @@ export class Storage {
         metaData: undefined, // metaData is not necessary
       },
     });
-    const res = await this.app._uluru(req);
+    const res = await this.app._uluru(req, option);
     const tokens = res.body as Record<string, string>;
 
     const provider = this.getFileProvider(tokens.provider);
     const { upload_url, key, token } = tokens;
-
     try {
-      const providerRes = await provider.upload(
-        file,
-        upload_url,
-        key,
-        token,
-        option?.onProgress
-      );
+      const info = { url: upload_url, key, token };
+      const providerRes = await provider.upload(file, info, option);
       file.objectId = tokens.objectId;
       await this._invokeFileCallback(token);
       return providerRes;

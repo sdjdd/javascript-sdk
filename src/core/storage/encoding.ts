@@ -1,7 +1,13 @@
 import { LCObject, GeoPoint, User } from './Object';
-import { IObjectData, IObject, IDate } from '../types';
+import {
+  IObject,
+  IDate,
+  IACLPrivilege,
+  IObjectDataRaw,
+  IObjectData,
+} from '../types';
 import { isDate, assert } from '../utils';
-import { ACL, ACLPrivilege } from './ACL';
+import { ACL } from './ACL';
 
 export class ObjectEncoder {
   static encodeData(data: unknown): unknown {
@@ -84,7 +90,7 @@ export class ObjectDecoder {
     return decoded;
   }
 
-  static decode(data: IObjectData, className?: string): LCObject {
+  static decode(data: IObjectDataRaw, className?: string): LCObject {
     assert(data.objectId, 'The objectId must be provided');
     if (!className) {
       assert(
@@ -117,7 +123,7 @@ export class ObjectDecoder {
       obj.data.updatedAt = new Date(data.updatedAt);
     }
     if (data.ACL) {
-      obj.data.ACL = ACL.from(data.ACL as Record<string, ACLPrivilege>);
+      obj.data.ACL = ACL.from(data.ACL as Record<string, IACLPrivilege>);
     }
 
     return obj;

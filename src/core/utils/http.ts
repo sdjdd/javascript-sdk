@@ -57,9 +57,9 @@ export class UploadRequest extends HTTPRequest implements IUploadRequest {
   file: IFileData | IFileData[];
   formData?: Record<string, unknown>;
 
-  constructor(option?: IUploadRequestInitOption) {
+  constructor(option: IUploadRequestInitOption) {
     super(option);
-    this.file = option?.file;
-    this.formData = option?.formData;
+    this.file = option.file;
+    this.formData = option.formData;
   }
 }

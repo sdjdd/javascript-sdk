@@ -3,17 +3,17 @@ import superagent from 'superagent';
 import {
   IHTTPRequest,
   IHTTPResponse,
-  IAbortable,
+  IRequestOption,
   IKVStorage,
   IPlatform,
   IFileData,
   IUploadRequest,
-  ProgressListener,
+  IUploadOption,
 } from '../adapters';
 
 async function request(
   req: IHTTPRequest,
-  option?: IAbortable
+  option?: IRequestOption
 ): Promise<IHTTPResponse> {
   try {
     const superReq = superagent(req.method, req.url);
@@ -51,7 +51,7 @@ async function request(
 
 async function upload(
   req: IUploadRequest,
-  progressListener?: ProgressListener
+  option?: IUploadOption
 ): Promise<IHTTPResponse> {
   const superReq = superagent(req.method, req.url);
 
@@ -75,8 +75,11 @@ async function upload(
     });
   });
 
-  if (progressListener) {
-    superReq.on('progress', progressListener);
+  if (option?.signal) {
+    option.signal.onabort = superReq.abort;
+  }
+  if (option?.onProgress) {
+    superReq.on('progress', option.onProgress);
   }
 
   // eslint-disable-next-line

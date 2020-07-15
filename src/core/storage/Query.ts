@@ -1,6 +1,6 @@
 import { App } from '../App';
 import { isRegExp, HTTPRequest } from '../utils';
-import { IObjectData, IObject, IQuery } from '../types';
+import { IObject, IQuery, IObjectDataRaw, IQueryFindOption } from '../types';
 import { ObjectDecoder } from './encoding';
 
 export type Condition =
@@ -294,7 +294,7 @@ export class Query implements IQuery {
     return str;
   }
 
-  _makeRequest(): HTTPRequest {
+  _makeRequest(option?: IQueryFindOption): HTTPRequest {
     const req = new HTTPRequest({ path: `/1.1/classes/${this.className}` });
     const where = this.toString();
     if (where) {
@@ -312,15 +312,18 @@ export class Query implements IQuery {
         .join(',');
     }
     if (this._select.size > 0) {
-      req.query.keys = new Array(this._select).join(',');
+      req.query.keys = Array.from(this._select).join(',');
+    }
+    if (option?.include) {
+      req.query.include = option.include.join(',');
     }
     return req;
   }
 
-  async find(): Promise<IObject[]> {
-    const res = await this.app._uluru(this._makeRequest());
+  async find(option?: IQueryFindOption): Promise<IObject[]> {
+    const res = await this.app._uluru(this._makeRequest(option));
 
-    const results = (res.body as { results: IObjectData[] }).results;
+    const results = (res.body as { results: IObjectDataRaw[] }).results;
     if (!results) {
       return [];
     }

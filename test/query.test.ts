@@ -79,10 +79,10 @@ describe('Query', function () {
   });
 
   describe('#select', function () {
-    it('should add keys to _select', function () {
-      const query = Test.select('key1', 'key2', 'key3');
-      const _select = Reflect.get(query, '_select');
-      _select.should.eql(new Set(['key1', 'key2', 'key3']));
+    it('should add keys to _select', async function () {
+      await Test.select('key1', 'key2', 'key3').find();
+      const req = platform.popRequest();
+      req.query.keys.should.eql('key1,key2,key3');
     });
 
     it('should remove same key with prefix "-"', function () {
@@ -93,10 +93,10 @@ describe('Query', function () {
   });
 
   describe('#except', function () {
-    it('should add keys  with prefix "-" to _select', function () {
-      const query = Test.except('key1', 'key2', 'key3');
-      const _select = Reflect.get(query, '_select');
-      _select.should.eql(new Set(['-key1', '-key2', '-key3']));
+    it('should add keys  with prefix "-" to _select', async function () {
+      await Test.except('key1', 'key2', 'key3').find();
+      const req = platform.popRequest();
+      req.query.keys.should.eql('-key1,-key2,-key3');
     });
 
     it('should remove same key without prefix "-"', function () {

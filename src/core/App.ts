@@ -5,7 +5,8 @@ import {
   IPlatform,
   IHTTPResponse,
   IUploadRequest,
-  ProgressListener,
+  IUploadOption,
+  IRequestOption,
 } from '../adapters';
 import { UluruError } from './errors';
 
@@ -15,7 +16,7 @@ export class App {
   info: IAppInfo;
   platform: IPlatform;
 
-  private _cache: Record<string, unknown> = {};
+  private _cache = new Map<string, unknown>();
   private _sessionToken: string;
   private _useMasterKey: boolean;
 
@@ -57,9 +58,12 @@ export class App {
     this._sessionToken = sessionToken;
   }
 
-  async _request(req: HTTPRequest): Promise<IHTTPResponse> {
+  async _request(
+    req: HTTPRequest,
+    option?: IRequestOption
+  ): Promise<IHTTPResponse> {
     log('LC:Request:send', '%O', req);
-    const res = await this.platform.request(req);
+    const res = await this.platform.request(req, option);
     log('LC:Request:recv', '%O', res);
     return res;
   }
@@ -90,7 +94,7 @@ export class App {
       req.header['X-LC-Session'] = sessionToken;
     }
 
-    const res = await this._request(req);
+    const res = await this._request(req, option);
     if (typeof res.body === 'string') {
       res.body = JSON.parse(res.body);
     }
@@ -101,8 +105,8 @@ export class App {
     return res;
   }
 
-  _upload(req: IUploadRequest, pl?: ProgressListener): Promise<IHTTPResponse> {
-    return this.platform.upload(req, pl);
+  _upload(req: IUploadRequest, option?: IUploadOption): Promise<IHTTPResponse> {
+    return this.platform.upload(req, option);
   }
 
   _kvSet(key: string, value: string): void {
@@ -123,17 +127,17 @@ export class App {
 
   _cacheSet(key: string, value: unknown): void {
     log('LC:Cache:set', '%s = %o', key, value);
-    this._cache[key] = value;
+    this._cache.set(key, value);
   }
 
   _cacheGet(key: string): unknown {
-    const value = this._cache[key];
+    const value = this._cache.get(key);
     log('LC:Cache:get', '%s = %o', key, value);
     return value;
   }
 
   _cacheRemove(key: string): void {
     log('LC:Cache:rm', key);
-    delete this._cache[key];
+    this._cache.delete(key);
   }
 }

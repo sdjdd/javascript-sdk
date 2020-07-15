@@ -57,7 +57,11 @@ describe('LCObject', function () {
     });
 
     it('should remove reserved keys', async function () {
-      const data = { objectId: '-', createdAt: '-', updatedAt: '-' };
+      const data = {
+        objectId: '-',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
       await obj.update(data);
       const req = platform.popRequest();
       ((req.body as any).objectId === undefined).should.true();
