@@ -8,7 +8,6 @@ import {
   IPlatform,
   IFileData,
   IUploadRequest,
-  IUploadOption,
 } from '../adapters';
 
 async function request(
@@ -20,8 +19,13 @@ async function request(
     if (req.header) {
       superReq.set(req.header);
     }
+
     if (req.body) {
-      superReq.send(req.body as string | Record<string, unknown>);
+      if (req.body instanceof ArrayBuffer) {
+        req.body = Buffer.from(req.body);
+      }
+      // eslint-disable-next-line
+      superReq.send(req.body as any);
     }
 
     if (option?.signal) {
@@ -51,7 +55,7 @@ async function request(
 
 async function upload(
   req: IUploadRequest,
-  option?: IUploadOption
+  option?: IRequestOption
 ): Promise<IHTTPResponse> {
   const superReq = superagent(req.method, req.url);
 

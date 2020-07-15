@@ -1,5 +1,5 @@
 import { Class, UserClass } from './Class';
-import { QiniuFileProvider } from './file-providers';
+import { QiniuFileProvider, AWSS3FileProvider } from './file-providers';
 import { App } from '../App';
 import { Batch } from './Batch';
 import { IClass, IFile, IFileProvider, IUploadOption } from '../types';
@@ -25,6 +25,8 @@ export class Storage {
     switch (name) {
       case 'qiniu':
         return new QiniuFileProvider(this.app);
+      case 's3':
+        return new AWSS3FileProvider(this.app);
       default:
         throw new Error('Unsupported file uploader: ' + name);
     }
@@ -47,7 +49,8 @@ export class Storage {
     const tokens = res.body as Record<string, string>;
 
     const provider = this.getFileProvider(tokens.provider);
-    const { upload_url, key, token } = tokens;
+    const { mime_type, upload_url, key, token } = tokens;
+    file.mime = mime_type;
     try {
       const info = { url: upload_url, key, token };
       const providerRes = await provider.upload(file, info, option);
@@ -55,7 +58,7 @@ export class Storage {
       await this._invokeFileCallback(token);
       return providerRes;
     } catch (err) {
-      await this._invokeFileCallback(token);
+      await this._invokeFileCallback(token, false);
       throw err;
     }
   }

@@ -5,7 +5,6 @@ import {
   IPlatform,
   IHTTPResponse,
   IUploadRequest,
-  IUploadOption,
   IRequestOption,
 } from '../adapters';
 import { UluruError } from './errors';
@@ -105,7 +104,10 @@ export class App {
     return res;
   }
 
-  _upload(req: IUploadRequest, option?: IUploadOption): Promise<IHTTPResponse> {
+  _upload(
+    req: IUploadRequest,
+    option?: IRequestOption
+  ): Promise<IHTTPResponse> {
     return this.platform.upload(req, option);
   }
 

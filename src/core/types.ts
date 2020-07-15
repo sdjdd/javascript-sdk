@@ -1,6 +1,5 @@
 import {
   IHTTPResponse,
-  IUploadOption as IAdapterUploadOption,
   IRequestOption as IAdapterRequestOption,
 } from '../adapters';
 
@@ -118,7 +117,7 @@ export interface IFile {
   ACL?: IACL;
   key: string;
   name: string;
-  base64Data: string;
+  data: ArrayBuffer;
   mime: string;
 }
 
@@ -214,8 +213,9 @@ export interface IUploadFileInfo {
   token: string;
 }
 
-export interface IUploadOption extends IAdapterUploadOption, IAuthOption {
+export interface IUploadOption extends IAdapterRequestOption, IAuthOption {
   keepFileName?: boolean;
+  header?: Record<string, string>; // send to file provider
 }
 
 export interface IFileProvider {

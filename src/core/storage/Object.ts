@@ -1,6 +1,12 @@
 import { v4 as uuid } from 'uuid';
 import { App, KEY_CURRENT_USER } from '../App';
-import { removeReservedKeys, HTTPRequest, fail, deleteKey } from '../utils';
+import {
+  removeReservedKeys,
+  HTTPRequest,
+  fail,
+  deleteKey,
+  base64ToArrayBuffer,
+} from '../utils';
 import {
   IObject,
   IGeoPoint,
@@ -131,20 +137,32 @@ export class File implements IFile {
   __type: 'File' = 'File';
   key: string;
   name: string;
-  base64Data: string;
+  data: ArrayBuffer;
   mime: string;
   objectId: string;
   ACL?: ACL;
 
-  constructor(name: string, data: string) {
-    const ext = name.split('.').pop();
-    if (ext.length > 0) {
-      this.key = uuid() + '.' + ext;
-    } else {
-      this.key = uuid();
+  constructor(name: string, data?: unknown) {
+    this.key = uuid();
+    if (name.includes('.')) {
+      const ext = name.split('.').pop();
+      this.key += '.' + ext;
     }
     this.name = name;
-    this.base64Data = data;
+
+    if (data instanceof ArrayBuffer) {
+      this.data = data;
+    }
+    if (typeof data === 'string') {
+      this.data = base64ToArrayBuffer(data);
+    }
+  }
+
+  static fromRawString(name: string, data: string): File {
+    const file = new File(name);
+    const encoder = new TextEncoder();
+    file.data = encoder.encode(data).buffer;
+    return file;
   }
 }
 

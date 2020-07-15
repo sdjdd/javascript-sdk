@@ -20,6 +20,7 @@ export interface IUploadRequest extends Omit<IHTTPRequest, 'body'> {
 
 export interface IRequestOption {
   signal?: { onabort(): void };
+  onProgress?: ProgressListener;
 }
 
 export type Request = (
@@ -41,13 +42,9 @@ export interface IProgressEvent {
 
 export type ProgressListener = (event: IProgressEvent) => void;
 
-export interface IUploadOption extends IRequestOption {
-  onProgress?: ProgressListener;
-}
-
 export type Upload = (
   req: IUploadRequest,
-  option?: IUploadOption
+  option?: IRequestOption
 ) => Promise<IHTTPResponse>;
 
 export interface IKVStorage {
