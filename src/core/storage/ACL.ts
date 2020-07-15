@@ -6,17 +6,31 @@ export class ACL implements IACL {
   static from(data: Record<string, IACLPrivilege>): ACL {
     const acl = new ACL();
     Object.entries(data).forEach(([subject, privilege]) => {
-      if (privilege.read) {
+      if (privilege.read === true) {
         acl.allow(subject, 'read');
-      } else {
+      } else if (privilege.read === false) {
         acl.deny(subject, 'read');
       }
-      if (privilege.write) {
+      if (privilege.write === true) {
         acl.allow(subject, 'write');
-      } else {
+      } else if (privilege.write === false) {
         acl.deny(subject, 'write');
       }
     });
+    return acl;
+  }
+
+  static readOnlyFor(...subjects: ACLSubject[]): ACL {
+    const acl = new ACL();
+    subjects.forEach((subject) => acl.allow(subject, 'read'));
+    return acl;
+  }
+
+  static grantAllFor(...subjects: ACLSubject[]): ACL {
+    const acl = new ACL();
+    subjects.forEach((subject) =>
+      acl.allow(subject, 'read').allow(subject, 'write')
+    );
     return acl;
   }
 
