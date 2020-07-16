@@ -10,7 +10,6 @@ import {
   IAuthOption,
   IFile,
   IObjectData,
-  IObjectDataRaw,
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './ObjectEncoding';
 import { ACL } from './ACL';
@@ -80,7 +79,7 @@ export class LCObject implements IObject {
   async update(
     data: IObjectData,
     option?: IObjectUpdateOption
-  ): Promise<LCObject> {
+  ): Promise<IObject> {
     removeReservedKeys(data);
 
     const req = new HTTPRequest({
@@ -106,20 +105,17 @@ export class LCObject implements IObject {
     await this.app._uluru(req, option);
   }
 
-  async get(option?: IObjectGetOption): Promise<LCObject> {
+  async get(option?: IObjectGetOption): Promise<IObject> {
     const req = new HTTPRequest({ path: this._path });
     if (option?.include) {
       req.query.include = option.include.join(',');
     }
     const res = await this.app._uluru(req);
 
-    const attr = res.body as IObjectDataRaw;
-    if (Object.keys(attr).length === 0) {
+    if (Object.keys(res.body).length === 0) {
       throw new Error('objectId not exists');
     }
-
-    const obj = ObjectDecoder.decode(attr, this.className) as LCObject;
-    return obj.setApp(this.app);
+    return ObjectDecoder.decode(res.body, this.className).setApp(this.app);
   }
 }
 

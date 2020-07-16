@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+
 import {
   IObject,
   IDate,
@@ -91,7 +94,11 @@ export class ObjectDecoder {
     return decoded;
   }
 
-  static decode(data: IObjectDataRaw, className?: string): IObject {
+  static decode(data: any, className?: string): IObject {
+    if (typeof data !== 'object') {
+      throw new Error('The data is must an object');
+    }
+
     assert(data.objectId, 'The objectId must be provided');
     if (!className) {
       assert(
@@ -107,7 +114,7 @@ export class ObjectDecoder {
     ['__type', 'className', 'createdAt', 'updatedAt', 'ACL'].forEach(
       (key) => delete _data[key]
     );
-    obj.data = ObjectDecoder.decodeData(_data) as IObjectData;
+    obj.data = ObjectDecoder.decodeData(_data);
 
     if (data.createdAt) {
       obj.data.createdAt = new Date(data.createdAt);

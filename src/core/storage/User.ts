@@ -29,13 +29,12 @@ export class UserClass extends Class {
     app.setSessionToken(user.sessionToken);
   }
 
-  static _getCurrentUser(app: App): User {
-    let user = app._cacheGet(KEY_CURRENT_USER) as User;
+  static _getCurrentUser(app: App): IUser {
+    let user = app._cacheGet(KEY_CURRENT_USER) as IUser;
     if (!user) {
       const userStr = app._kvGet(KEY_CURRENT_USER);
       if (userStr) {
-        user = ObjectDecoder.decode(JSON.parse(userStr)) as User;
-        user.setApp(app);
+        user = ObjectDecoder.decode(JSON.parse(userStr)).setApp(app);
         app._cacheSet(KEY_CURRENT_USER, user);
       }
     }
@@ -52,7 +51,7 @@ export class UserClass extends Class {
     return new User(id, this.app);
   }
 
-  current(): User {
+  current(): IUser {
     return UserClass._getCurrentUser(this.app);
   }
 

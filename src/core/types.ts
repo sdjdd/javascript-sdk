@@ -23,6 +23,10 @@ export interface IQuery {
   _parseWhere(): unknown;
 }
 
+export interface IClass {
+  add(data: IObjectData, option?: IObjectAddOption): Promise<IObject>;
+}
+
 export interface IObjectAddOption extends IAuthOption {
   include?: string[];
   includeACL?: boolean; // returnACL
@@ -75,6 +79,7 @@ export interface IObject {
   get(option?: IObjectGetOption): Promise<IObject>;
   update(data: IObjectData, option?: IObjectUpdateOption): Promise<IObject>;
   delete(option?: IAuthOption): Promise<void>;
+  setApp(app: unknown): this;
 }
 
 export interface IDate {

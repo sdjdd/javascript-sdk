@@ -1,18 +1,18 @@
 import { LCObject } from './Object';
 import { Query } from './Query';
 import { App } from '../App';
-import { IObjectAddOption, IObjectData, IObjectDataRaw } from '../types';
+import { IObjectAddOption, IObjectData, IClass, IObject } from '../types';
 import { ObjectDecoder, ObjectEncoder } from './ObjectEncoding';
 import { removeReservedKeys, HTTPRequest } from '../utils';
 
-export class Class extends Query {
+export class Class extends Query implements IClass {
   app: App;
 
-  object(id: string): LCObject {
+  object(id: string): IObject {
     return new LCObject(this.className, id, this.app);
   }
 
-  async add(data: IObjectData, option?: IObjectAddOption): Promise<LCObject> {
+  async add(data: IObjectData, option?: IObjectAddOption): Promise<IObject> {
     removeReservedKeys(data);
     const req = new HTTPRequest({
       method: 'POST',
@@ -23,9 +23,6 @@ export class Class extends Query {
       req.query.fetchWhenSave = 'true';
     }
     const res = await this.app._uluru(req);
-
-    const _data = res.body as IObjectDataRaw;
-    const obj = ObjectDecoder.decode(_data, this.className) as LCObject;
-    return obj.setApp(this.app);
+    return ObjectDecoder.decode(res.body, this.className).setApp(this.app);
   }
 }

@@ -2,7 +2,13 @@ import { Class } from './Class';
 import { Qiniu, AWSS3 } from './file-provider';
 import { App } from '../App';
 import { Batch } from './Batch';
-import { IFile, IFileProvider, IUploadOption, IFileTokens } from '../types';
+import {
+  IFile,
+  IFileProvider,
+  IUploadOption,
+  IFileTokens,
+  IObject,
+} from '../types';
 import { IHTTPResponse } from '../../adapters';
 import { HTTPRequest } from '../utils';
 import { LCObject } from './Object';
@@ -41,7 +47,7 @@ export class Storage {
     }
   }
 
-  async upload(file: IFile, option?: IUploadOption): Promise<LCObject> {
+  async upload(file: IFile, option?: IUploadOption): Promise<IObject> {
     const req = new HTTPRequest({
       method: 'POST',
       path: '/1.1/fileTokens',
@@ -65,9 +71,9 @@ export class Storage {
       await provider.upload(file, info, option);
       await this._invokeFileCallback(token);
 
-      const obj = ObjectDecoder.decode(tokens, '_File') as LCObject;
+      const obj = ObjectDecoder.decode(tokens, '_File').setApp(this.app);
       delete obj.data.token;
-      return obj.setApp(this.app);
+      return obj;
     } catch (err) {
       await this._invokeFileCallback(token, false);
       throw err;

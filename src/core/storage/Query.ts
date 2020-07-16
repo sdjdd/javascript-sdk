@@ -2,7 +2,6 @@ import { App } from '../App';
 import { isRegExp, HTTPRequest } from '../utils';
 import { IObject, IQuery, IObjectDataRaw, IQueryFindOption } from '../types';
 import { ObjectDecoder } from './ObjectEncoding';
-import { LCObject } from './Object';
 
 export type Condition =
   | '=='
@@ -328,10 +327,9 @@ export class Query implements IQuery {
     if (!results) {
       return [];
     }
-    return results.map((result) => {
-      const obj = ObjectDecoder.decode(result, this.className) as LCObject;
-      return obj.setApp(this.app);
-    });
+    return results.map((result) =>
+      ObjectDecoder.decode(result, this.className).setApp(this.app)
+    );
   }
 
   async first(): Promise<IObject> {
