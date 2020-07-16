@@ -1,5 +1,5 @@
 import { Class } from './Class';
-import { QiniuFileProvider, AWSS3FileProvider } from './file-providers';
+import { Qiniu, AWSS3 } from './file-provider';
 import { App } from '../App';
 import { Batch } from './Batch';
 import { IFile, IFileProvider, IUploadOption, IFileTokens } from '../types';
@@ -33,9 +33,9 @@ export class Storage {
   getFileProvider(name: string): IFileProvider {
     switch (name) {
       case 'qiniu':
-        return new QiniuFileProvider(this.app);
+        return new Qiniu(this.app);
       case 's3':
-        return new AWSS3FileProvider(this.app);
+        return new AWSS3(this.app);
       default:
         throw new Error('Unsupported file uploader: ' + name);
     }
