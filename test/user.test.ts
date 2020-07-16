@@ -119,4 +119,15 @@ describe('User', function () {
       testApp.getSessionToken().should.eql('new-session');
     });
   });
+
+  describe('#delete', function () {
+    const user = new User('test-user-id', testApp);
+
+    it('should log out when this is current user', async function () {
+      UserClass._setCurrentUser(testApp, user);
+      user.isCurrentUser().should.true();
+      await user.delete();
+      (UserClass._getCurrentUser(testApp) === null).should.true();
+    });
+  });
 });

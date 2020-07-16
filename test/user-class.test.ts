@@ -246,4 +246,44 @@ describe('UserClass', function () {
       req.path.should.eql('/1.1/verifyMobilePhone/123456');
     });
   });
+
+  describe('#requestChangePhoneNumber', function () {
+    const User = new UserClass(testApp);
+
+    it('should sent POST request to /requestChangePhoneNumber', async function () {
+      await User.requestChangePhoneNumber('phone-number', 30);
+      const req = platform.popRequest();
+      req.method.should.eql('POST');
+      req.path.should.eql('/1.1/requestChangePhoneNumber');
+    });
+
+    it('should submit mobilePhoneNumber & ttl', async function () {
+      await User.requestChangePhoneNumber('phone-number', 30);
+      const req = platform.popRequest();
+      req.body.should.eql({
+        mobilePhoneNumber: 'phone-number',
+        ttl: 30,
+      });
+    });
+  });
+
+  describe('#changeMobilePhone', function () {
+    const User = new UserClass(testApp);
+
+    it('should send POST request to /changePhoneNumber', async function () {
+      await User.changePhoneNumber('_', '_');
+      const req = platform.popRequest();
+      req.method.should.eql('POST');
+      req.path.should.eql('/1.1/changePhoneNumber');
+    });
+
+    it('should submit mobilePhoneNumber & code', async function () {
+      await User.changePhoneNumber('phone-number', 'code');
+      const req = platform.popRequest();
+      req.body.should.eql({
+        mobilePhoneNumber: 'phone-number',
+        code: 'code',
+      });
+    });
+  });
 });

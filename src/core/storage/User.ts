@@ -269,6 +269,36 @@ export class UserClass extends Class {
       })
     );
   }
+
+  async requestChangePhoneNumber(
+    mobilePhoneNumber: string,
+    ttl?: number,
+    option?: IAuthDataWithCaptchaToken
+  ): Promise<void> {
+    const body: Record<string, unknown> = { mobilePhoneNumber };
+    if (ttl) {
+      body.ttl = ttl;
+    }
+    const req = new HTTPRequest({
+      method: 'POST',
+      path: '/1.1/requestChangePhoneNumber',
+      body,
+    });
+    await this.app._uluru(req, option);
+  }
+
+  async changePhoneNumber(
+    mobilePhoneNumber: string,
+    code: string,
+    option?: IAuthOption
+  ): Promise<void> {
+    const req = new HTTPRequest({
+      method: 'POST',
+      path: '/1.1/changePhoneNumber',
+      body: { mobilePhoneNumber, code },
+    });
+    await this.app._uluru(req, option);
+  }
 }
 
 export class User extends LCObject implements IUser {
