@@ -20,21 +20,7 @@ export interface IQueryFindOption {
 }
 
 export interface IQuery {
-  select(...columns: string[]): IQuery;
-  except(...columns: string[]): IQuery;
-  where(key: string, condition: string, value?: unknown): IQuery;
-  or(): IQuery;
-  limit(count: number): IQuery;
-  skip(count: number): IQuery;
-  orderBy(key: string, rule: 'asc' | 'desc'): IQuery;
-  find(option?: IQueryFindOption): Promise<IObject[]>;
-  first(): Promise<IObject>;
-  count(): Promise<number>;
-}
-
-export interface IClass {
-  object(id: string): IObject;
-  add(data: IObjectData, option?: IObjectAddOption): Promise<IObject>;
+  _parseWhere(): unknown;
 }
 
 export interface IObjectAddOption extends IAuthOption {
@@ -43,13 +29,12 @@ export interface IObjectAddOption extends IAuthOption {
   fetch?: boolean;
 }
 
-export interface IObjectData {
+export interface IObjectData extends Record<string, unknown> {
   className?: string; // pointer only
   objectId?: string;
   createdAt?: Date;
   updatedAt?: Date;
   ACL?: IACL;
-  [key: string]: unknown;
 }
 
 export interface IObjectDataRaw extends Record<string, unknown> {
@@ -97,11 +82,10 @@ export interface IDate {
   iso: string;
 }
 
-export interface IPointer {
+export interface IPointer extends Record<string, unknown> {
   __type: 'Pointer';
   className: string;
   objectId: string;
-  [key: string]: unknown;
 }
 
 export interface IGeoPoint {
@@ -130,52 +114,6 @@ export interface IFile {
   metaData?: Record<string, unknown>;
 }
 
-export interface IUserClass extends IClass {
-  object(id: string): IUser;
-  current(): IUser;
-  become(sessionToken: string): Promise<IUser>;
-  signUp(data: IUserData, option?: IObjectAddOption): Promise<IUser>;
-  signUpOrLogInWithMobilePhone(
-    mobilePhoneNumber: string,
-    smsCode: string,
-    data: Record<string, unknown>,
-    option?: IAuthOption
-  ): Promise<IUser>;
-  logIn(username: string, password: string): Promise<IUser>;
-  logInAnonymously(): Promise<IUser>;
-  logInWithEmail(email: string, password: string): Promise<IUser>;
-  logInWithMobilePhone(
-    mobilePhoneNumber: string,
-    password: string
-  ): Promise<IUser>;
-  logInWithMobilePhoneSmsCode(
-    mobilePhoneNumber: string,
-    smsCode: string
-  ): Promise<IUser>;
-  logInWithAuthData(
-    platform: string,
-    authData: Record<string, unknown>,
-    option?: IUserLoginWithAuthDataOption
-  ): Promise<IUser>;
-  logOut(): void;
-  requestLoginSmsCode(
-    mobilePhoneNumber: string,
-    option?: IAuthDataWithCaptchaToken
-  ): Promise<void>;
-  requestEmailVerify(email: string): Promise<void>;
-  requestMobilePhoneVerify(
-    mobilePhoneNumber: string,
-    option?: IAuthDataWithCaptchaToken
-  ): Promise<void>;
-  requestPasswordReset(email: string): Promise<void>;
-  requestPasswordResetBySmsCode(
-    mobilePhoneNumber: string,
-    option?: IAuthDataWithCaptchaToken
-  ): Promise<void>;
-  resetPasswordBySmsCode(code: string, password: string): Promise<void>;
-  verifyMobilePhone(code: string): Promise<void>;
-}
-
 export interface IUserData extends IObjectData {
   username?: string;
   password?: string;
@@ -188,13 +126,6 @@ export interface IUserData extends IObjectData {
 
 export interface IUser extends IObject {
   sessionToken?: string;
-  isAnonymous(): boolean;
-  isAuthenticated(): Promise<boolean>;
-  updatePassword(
-    oldPassword: string,
-    newPassword: string,
-    option?: IAuthOption
-  ): Promise<void>;
 }
 
 export interface IUserLoginWithAuthDataOption {
@@ -211,9 +142,8 @@ export interface IAuthDataWithCaptchaToken extends IAuthOption {
   validateToken?: string;
 }
 
-export interface IOperation {
+export interface IOperation extends Record<string, unknown> {
   __op: string;
-  [key: string]: unknown;
 }
 
 export interface IUploadFileInfo {

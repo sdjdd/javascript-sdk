@@ -13,6 +13,12 @@ export interface IHTTPResponse {
   body?: unknown;
 }
 
+export interface IFileData {
+  field: string; // formFiled
+  name: string;
+  data: string | ArrayBuffer; // base64 or binary
+}
+
 export interface IUploadRequest extends Omit<IHTTPRequest, 'body'> {
   file: IFileData | IFileData[];
   formData?: Record<string, unknown>;
@@ -27,12 +33,6 @@ export type Request = (
   req: IHTTPRequest,
   option?: IRequestOption
 ) => Promise<IHTTPResponse>;
-
-export interface IFileData {
-  field: string; // formFiled
-  name: string;
-  data: string | ArrayBuffer; // base64 or binary
-}
 
 export interface IProgressEvent {
   total: number;

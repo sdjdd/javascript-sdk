@@ -1,4 +1,3 @@
-import { LCObject, GeoPoint, User } from './Object';
 import {
   IObject,
   IDate,
@@ -8,16 +7,18 @@ import {
 } from '../types';
 import { isDate, assert } from '../utils';
 import { ACL } from './ACL';
+import { GeoPoint } from './GeoPoint';
+import { ObjectFactory } from './ObjectFactory';
 
 export class ObjectEncoder {
-  static encodeData(data: unknown): unknown {
+  static encodeData(data: unknown): IObjectDataRaw {
     const { constructor } = Object.getPrototypeOf(data);
     const encoded = new constructor();
 
     Object.entries(data).forEach(([key, value]) => {
       if (!value) return;
 
-      if (value instanceof LCObject) {
+      if (value.toPointer) {
         encoded[key] = value.toPointer();
         return;
       }
@@ -59,7 +60,7 @@ export class ObjectEncoder {
 }
 
 export class ObjectDecoder {
-  static decodeData(data: unknown): unknown {
+  static decodeData(data: unknown): IObjectData {
     const { constructor } = Object.getPrototypeOf(data);
     const decoded = new constructor();
 
@@ -90,7 +91,7 @@ export class ObjectDecoder {
     return decoded;
   }
 
-  static decode(data: IObjectDataRaw, className?: string): LCObject {
+  static decode(data: IObjectDataRaw, className?: string): IObject {
     assert(data.objectId, 'The objectId must be provided');
     if (!className) {
       assert(
@@ -100,15 +101,7 @@ export class ObjectDecoder {
       className = data.className;
     }
 
-    let obj: LCObject;
-    switch (className) {
-      case '_User':
-        obj = new User(data.objectId);
-        break;
-
-      default:
-        obj = new LCObject(className, data.objectId);
-    }
+    const obj = ObjectFactory.create(className, data.objectId);
 
     const _data = { ...data };
     ['__type', 'className', 'createdAt', 'updatedAt', 'ACL'].forEach(

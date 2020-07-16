@@ -6,5 +6,6 @@ export * from './Object';
 export * from './Query';
 export * from './Storage';
 export * from './Operation';
+export * from './User';
 
 export { debug };

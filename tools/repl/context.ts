@@ -13,7 +13,10 @@ export {
   File,
 } from '../../src/core';
 
-export { ObjectDecoder, ObjectEncoder } from '../../src/core/storage/encoding';
+export {
+  ObjectDecoder,
+  ObjectEncoder,
+} from '../../src/core/storage/ObjectEncoding';
 
 debug.enable('LC*');
 

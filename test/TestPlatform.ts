@@ -3,9 +3,8 @@ import { MemoryStorage } from '../src/node';
 import {
   IPlatform,
   IHTTPResponse,
-  IFileData,
-  IUploadOption,
   IUploadRequest,
+  IRequestOption,
 } from '../src/adapters';
 import { HTTPRequest } from '../src/core/utils';
 
@@ -53,7 +52,7 @@ export class TestPlatform implements IPlatform {
 
   async upload(
     req: IUploadRequest,
-    option?: IUploadOption
+    option?: IRequestOption
   ): Promise<IHTTPResponse> {
     return {
       status: 200,

@@ -1,23 +1,24 @@
-import { Class, UserClass } from './Class';
+import { Class } from './Class';
 import { QiniuFileProvider, AWSS3FileProvider } from './file-providers';
 import { App } from '../App';
 import { Batch } from './Batch';
-import {
-  IClass,
-  IFile,
-  IFileProvider,
-  IUploadOption,
-  IFileTokens,
-} from '../types';
+import { IFile, IFileProvider, IUploadOption, IFileTokens } from '../types';
 import { IHTTPResponse } from '../../adapters';
 import { HTTPRequest } from '../utils';
 import { LCObject } from './Object';
-import { ObjectDecoder } from './encoding';
+import { ObjectDecoder } from './ObjectEncoding';
+import { User, UserClass } from './User';
+import { ObjectFactory } from './ObjectFactory';
+
+ObjectFactory.registerDefaultHandler(
+  (className, objectId) => new LCObject(className, objectId)
+);
+ObjectFactory.registerHandler('_User', (objectId) => new User(objectId));
 
 export class Storage {
   constructor(public app: App) {}
 
-  class(name: string): IClass {
+  class(name: string): Class {
     return new Class(this.app, name);
   }
 
@@ -64,7 +65,7 @@ export class Storage {
       await provider.upload(file, info, option);
       await this._invokeFileCallback(token);
 
-      const obj = ObjectDecoder.decode(tokens, '_File');
+      const obj = ObjectDecoder.decode(tokens, '_File') as LCObject;
       delete obj.data.token;
       return obj.setApp(this.app);
     } catch (err) {

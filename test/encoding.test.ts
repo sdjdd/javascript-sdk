@@ -1,7 +1,12 @@
 import 'should';
-import { ObjectEncoder, ObjectDecoder } from '../src/core/storage/encoding';
+import {
+  ObjectEncoder,
+  ObjectDecoder,
+} from '../src/core/storage/ObjectEncoding';
 import { IPointer, IGeoPoint, IDate } from '../src/core/types';
-import { LCObject, GeoPoint, User } from '../src/core';
+import { LCObject } from '../src/core';
+import { GeoPoint } from '../src/core/storage/GeoPoint';
+import { User } from '../src/core/storage/User';
 
 describe('ObjectEncoder', function () {
   describe('.encodeData', function () {
