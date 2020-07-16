@@ -53,7 +53,7 @@ export interface IObjectUpdateOption extends IObjectAddOption {
   where?: IQuery;
 }
 
-export interface IObjectGetOption {
+export interface IObjectGetOption extends IAuthOption {
   include?: string[];
 }
 

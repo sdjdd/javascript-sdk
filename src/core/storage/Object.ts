@@ -13,6 +13,53 @@ import {
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './ObjectEncoding';
 import { ACL } from './ACL';
+import { IHTTPResponse } from '../../adapters';
+import { APIPath } from './APIPath';
+
+export class ObjectGetTask {
+  request: HTTPRequest;
+  responseBody: unknown;
+
+  constructor(public obj: LCObject) {}
+
+  make(option?: IObjectGetOption): this {
+    const { className, objectId } = this.obj;
+    this.request = new HTTPRequest({
+      path: APIPath.get(className, objectId),
+    });
+    if (option?.include) {
+      this.request.query.include = option.include.join(',');
+    }
+    return this;
+  }
+
+  async send(option?: IAuthOption): Promise<this> {
+    const res = await this.obj.app._uluru(this.request, option);
+    this.responseBody = res.body;
+    return this;
+  }
+
+  parse(): IObject {
+    if (!this.responseBody) {
+      throw new Error('The responseBody is undefined');
+    }
+    if (Object.keys(this.responseBody).length === 0) {
+      throw new Error('objectId not exists');
+    }
+    const { app, className } = this.obj;
+    return ObjectDecoder.decode(this.responseBody, className).setApp(app);
+  }
+
+  async do(option?: IObjectGetOption): Promise<IObject> {
+    if (!this.request) {
+      this.make(option);
+    }
+    if (!this.responseBody) {
+      await this.send(option);
+    }
+    return this.parse();
+  }
+}
 
 export class LCObject implements IObject {
   app: App;
@@ -76,12 +123,11 @@ export class LCObject implements IObject {
     return this;
   }
 
-  async update(
+  sendUpdateRequest(
     data: IObjectData,
     option?: IObjectUpdateOption
-  ): Promise<IObject> {
+  ): Promise<IHTTPResponse> {
     removeReservedKeys(data);
-
     const req = new HTTPRequest({
       method: 'PUT',
       path: this._path,
@@ -93,8 +139,18 @@ export class LCObject implements IObject {
     if (option?.fetch) {
       req.query.fetchWhenSave = 'true';
     }
-    const res = await this.app._uluru(req);
+    return this.app._uluru(req);
+  }
 
+  get(option?: IObjectGetOption): Promise<IObject> {
+    return new ObjectGetTask(this).do(option);
+  }
+
+  async update(
+    data: IObjectData,
+    option?: IObjectUpdateOption
+  ): Promise<IObject> {
+    const res = await this.sendUpdateRequest(data, option);
     const obj = new LCObject(this.className, this.objectId, this.app);
     obj.data = ObjectDecoder.decodeData(res.body);
     return obj;
@@ -103,19 +159,6 @@ export class LCObject implements IObject {
   async delete(option?: IAuthOption): Promise<void> {
     const req = new HTTPRequest({ method: 'DELETE', path: this._path });
     await this.app._uluru(req, option);
-  }
-
-  async get(option?: IObjectGetOption): Promise<IObject> {
-    const req = new HTTPRequest({ path: this._path });
-    if (option?.include) {
-      req.query.include = option.include.join(',');
-    }
-    const res = await this.app._uluru(req);
-
-    if (Object.keys(res.body).length === 0) {
-      throw new Error('objectId not exists');
-    }
-    return ObjectDecoder.decode(res.body, this.className).setApp(this.app);
   }
 }
 
