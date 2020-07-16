@@ -108,6 +108,7 @@ export class App {
     req: IUploadRequest,
     option?: IRequestOption
   ): Promise<IHTTPResponse> {
+    log('LC:Upload', '%O', req);
     return this.platform.upload(req, option);
   }
 

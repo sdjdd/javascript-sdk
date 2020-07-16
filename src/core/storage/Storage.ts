@@ -2,9 +2,17 @@ import { Class, UserClass } from './Class';
 import { QiniuFileProvider, AWSS3FileProvider } from './file-providers';
 import { App } from '../App';
 import { Batch } from './Batch';
-import { IClass, IFile, IFileProvider, IUploadOption } from '../types';
+import {
+  IClass,
+  IFile,
+  IFileProvider,
+  IUploadOption,
+  IFileTokens,
+} from '../types';
 import { IHTTPResponse } from '../../adapters';
 import { HTTPRequest } from '../utils';
+import { LCObject } from './Object';
+import { ObjectDecoder } from './encoding';
 
 export class Storage {
   constructor(public app: App) {}
@@ -32,31 +40,33 @@ export class Storage {
     }
   }
 
-  async upload(file: IFile, option?: IUploadOption): Promise<IHTTPResponse> {
+  async upload(file: IFile, option?: IUploadOption): Promise<LCObject> {
     const req = new HTTPRequest({
       method: 'POST',
       path: '/1.1/fileTokens',
       body: {
         key: file.key,
         name: file.name,
-        ACL: undefined,
+        ACL: file.ACL,
         mime_type: file.mime,
         keep_file_name: option?.keepFileName || false,
-        metaData: undefined, // metaData is not necessary
+        metaData: file.metaData,
       },
     });
     const res = await this.app._uluru(req, option);
-    const tokens = res.body as Record<string, string>;
+    const tokens = res.body as IFileTokens;
 
     const provider = this.getFileProvider(tokens.provider);
     const { mime_type, upload_url, key, token } = tokens;
     file.mime = mime_type;
     try {
       const info = { url: upload_url, key, token };
-      const providerRes = await provider.upload(file, info, option);
-      file.objectId = tokens.objectId;
+      await provider.upload(file, info, option);
       await this._invokeFileCallback(token);
-      return providerRes;
+
+      const obj = ObjectDecoder.decode(tokens, '_File');
+      delete obj.data.token;
+      return obj.setApp(this.app);
     } catch (err) {
       await this._invokeFileCallback(token, false);
       throw err;

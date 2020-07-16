@@ -5,8 +5,6 @@ import {
   IFileData,
 } from '../../adapters';
 
-export * from './base64';
-
 export interface IHTTPRequestInitOption {
   method?: string;
   baseURL?: string;

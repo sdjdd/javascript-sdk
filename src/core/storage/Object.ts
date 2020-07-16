@@ -1,12 +1,7 @@
 import { v4 as uuid } from 'uuid';
+import { decode } from 'base64-arraybuffer';
 import { App, KEY_CURRENT_USER } from '../App';
-import {
-  removeReservedKeys,
-  HTTPRequest,
-  fail,
-  deleteKey,
-  base64ToArrayBuffer,
-} from '../utils';
+import { removeReservedKeys, HTTPRequest, fail, deleteKey } from '../utils';
 import {
   IObject,
   IGeoPoint,
@@ -154,7 +149,7 @@ export class File implements IFile {
       this.data = data;
     }
     if (typeof data === 'string') {
-      this.data = base64ToArrayBuffer(data);
+      this.data = decode(data);
     }
   }
 

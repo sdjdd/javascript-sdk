@@ -52,13 +52,12 @@ export interface IObjectData {
   [key: string]: unknown;
 }
 
-export interface IObjectDataRaw {
+export interface IObjectDataRaw extends Record<string, unknown> {
   className?: string; // pointer only
   objectId?: string;
   createdAt?: string;
   updatedAt?: string;
   ACL?: Record<string, IACLPrivilege>;
-  [key: string]: unknown;
 }
 
 export interface IObjectUpdateOption extends IObjectAddOption {
@@ -111,14 +110,24 @@ export interface IGeoPoint {
   longitude: number;
 }
 
+export interface IFileTokens extends IObjectDataRaw {
+  token: string;
+  url: string;
+  mime_type: string;
+  provider: string;
+  upload_url: string;
+  bucket: string;
+  key: string;
+}
+
 export interface IFile {
   __type: 'File';
-  objectId: string;
   ACL?: IACL;
   key: string;
   name: string;
   data: ArrayBuffer;
-  mime: string;
+  mime?: string;
+  metaData?: Record<string, unknown>;
 }
 
 export interface IUserClass extends IClass {
