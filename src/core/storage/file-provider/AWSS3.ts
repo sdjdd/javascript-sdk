@@ -1,6 +1,11 @@
 import { App } from '../../App';
-import { IHTTPResponse, IRequestOption } from '../../../adapters';
-import { IFileProvider, IUploadFileInfo, IFile } from '../../types';
+import { IHTTPResponse } from '../../../adapters';
+import {
+  IFileProvider,
+  IUploadFileInfo,
+  IFile,
+  IUploadOption,
+} from '../../types';
 import { HTTPRequest } from '../../utils';
 
 export class AWSS3 implements IFileProvider {
@@ -9,7 +14,7 @@ export class AWSS3 implements IFileProvider {
   upload(
     file: IFile,
     info: IUploadFileInfo,
-    option?: IRequestOption
+    option?: IUploadOption
   ): Promise<IHTTPResponse> {
     const req = new HTTPRequest({
       method: 'PUT',
@@ -17,6 +22,7 @@ export class AWSS3 implements IFileProvider {
       header: {
         'Content-Type': file.mime,
         'Cache-Control': 'public, max-age=31536000',
+        ...option.header,
       },
       body: file.data,
     });

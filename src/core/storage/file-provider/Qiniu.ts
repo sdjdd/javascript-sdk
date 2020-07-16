@@ -1,6 +1,11 @@
 import { App } from '../../App';
-import { IHTTPResponse, IRequestOption } from '../../../adapters';
-import { IFileProvider, IUploadFileInfo, IFile } from '../../types';
+import { IHTTPResponse } from '../../../adapters';
+import {
+  IFileProvider,
+  IUploadFileInfo,
+  IFile,
+  IUploadOption,
+} from '../../types';
 import { UploadRequest } from '../../utils';
 
 export class Qiniu implements IFileProvider {
@@ -9,7 +14,7 @@ export class Qiniu implements IFileProvider {
   upload(
     file: IFile,
     info: IUploadFileInfo,
-    option?: IRequestOption
+    option?: IUploadOption
   ): Promise<IHTTPResponse> {
     const _file = {
       field: 'file',
@@ -23,6 +28,7 @@ export class Qiniu implements IFileProvider {
     };
     const req = new UploadRequest({
       method: 'POST',
+      header: option.header,
       baseURL: info.url,
       file: _file,
       formData,
