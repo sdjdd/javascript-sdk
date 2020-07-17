@@ -9,7 +9,8 @@ import {
 } from '../adapters';
 import { UluruError } from './errors';
 
-export const KEY_CURRENT_USER = 'current-user';
+export const KEY_CURRENT_USER = 'CURRENT_USER';
+export const KEY_PUSH_ROUTER = 'PUSH_ROUTER';
 
 export class App {
   info: IAppInfo;

@@ -18,6 +18,8 @@ export {
   ObjectEncoder,
 } from '../../src/core/storage/ObjectEncoding';
 
+export * from '../../src/core/PushRouter';
+
 debug.enable('LC*');
 
 PlatformSupport.setPlatform(node);

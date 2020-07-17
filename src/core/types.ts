@@ -179,3 +179,12 @@ export interface IFileProvider {
     option?: IUploadOption
   ): Promise<IHTTPResponse>;
 }
+
+export interface IPushRouterData {
+  groupId: string;
+  groupUrl: string;
+  server: string;
+  ttl: number;
+  secondary: string;
+  expireAt?: number; // SDK only
+}
