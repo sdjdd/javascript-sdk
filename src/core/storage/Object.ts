@@ -1,5 +1,3 @@
-import { v4 as uuid } from 'uuid';
-import { decode } from 'base64-arraybuffer';
 import { App } from '../App';
 import { removeReservedKeys, HTTPRequest } from '../utils';
 import {
@@ -8,13 +6,11 @@ import {
   IObjectGetOption,
   IObjectUpdateOption,
   IAuthOption,
-  IFile,
   IObjectData,
   IObjectOperateTask,
   IObjectAddOption,
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './ObjectEncoding';
-import { ACL } from './ACL';
 import { APIPath } from './APIPath';
 
 export class ObjectCreateTask implements IObjectOperateTask {
@@ -247,38 +243,5 @@ export class LCObject implements IObject {
 
   delete(option?: IAuthOption): Promise<void> {
     return new ObjectDeleteTask(this, option).do() as Promise<undefined>;
-  }
-}
-
-export class File implements IFile {
-  __type: 'File' = 'File';
-  key: string;
-  name: string;
-  data: ArrayBuffer;
-  mime: string;
-  objectId: string;
-  ACL?: ACL;
-
-  constructor(name: string, data?: unknown) {
-    this.key = uuid();
-    if (name.includes('.')) {
-      const ext = name.split('.').pop();
-      this.key += '.' + ext;
-    }
-    this.name = name;
-
-    if (data instanceof ArrayBuffer) {
-      this.data = data;
-    }
-    if (typeof data === 'string') {
-      this.data = decode(data);
-    }
-  }
-
-  static fromRawString(name: string, data: string): File {
-    const file = new File(name);
-    const encoder = new TextEncoder();
-    file.data = encoder.encode(data).buffer;
-    return file;
   }
 }
