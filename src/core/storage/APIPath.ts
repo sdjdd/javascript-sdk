@@ -1,8 +1,14 @@
 export class APIPath {
-  static get(className: string, objectId: string): string {
+  static get(className: string, objectId?: string): string {
+    let path = '/1.1';
     if (className === '_User') {
-      return '/1.1/users/' + objectId;
+      path += '/users';
+    } else {
+      path += '/classes/' + className;
     }
-    return '/1.1/classes/' + className + '/' + objectId;
+    if (objectId) {
+      path += '/' + objectId;
+    }
+    return path;
   }
 }

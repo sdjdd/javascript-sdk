@@ -10,54 +10,166 @@ import {
   IAuthOption,
   IFile,
   IObjectData,
+  IObjectOperateTask,
+  IObjectAddOption,
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './ObjectEncoding';
 import { ACL } from './ACL';
-import { IHTTPResponse } from '../../adapters';
 import { APIPath } from './APIPath';
 
-export class ObjectGetTask {
+export class ObjectCreateTask implements IObjectOperateTask {
   request: HTTPRequest;
   responseBody: unknown;
 
-  constructor(public obj: LCObject) {}
+  constructor(
+    public app: App,
+    public className: string,
+    public data: IObjectData,
+    public option?: IObjectAddOption
+  ) {}
 
-  make(option?: IObjectGetOption): this {
-    const { className, objectId } = this.obj;
-    this.request = new HTTPRequest({
-      path: APIPath.get(className, objectId),
+  makeRequest(): HTTPRequest {
+    removeReservedKeys(this.data);
+    const req = new HTTPRequest({
+      method: 'POST',
+      path: APIPath.get(this.className),
+      body: ObjectEncoder.encodeData(this.data),
     });
-    if (option?.include) {
-      this.request.query.include = option.include.join(',');
+    if (this.option?.fetch) {
+      req.query.fetchWhenSave = 'true';
     }
-    return this;
+    this.request = req;
+    return req;
   }
 
-  async send(option?: IAuthOption): Promise<this> {
-    const res = await this.obj.app._uluru(this.request, option);
+  async sendRequest(): Promise<unknown> {
+    const res = await this.app._uluru(this.request, this.option);
     this.responseBody = res.body;
-    return this;
+    return this.responseBody;
   }
 
-  parse(): IObject {
+  encodeResponse(): IObject {
     if (!this.responseBody) {
       throw new Error('The responseBody is undefined');
     }
-    if (Object.keys(this.responseBody).length === 0) {
+    const obj = ObjectDecoder.decode(this.responseBody, this.className);
+    return obj.setApp(this.app);
+  }
+
+  async do(): Promise<IObject> {
+    if (!this.request) {
+      this.makeRequest();
+    }
+    if (!this.responseBody) {
+      await this.sendRequest();
+    }
+    return this.encodeResponse();
+  }
+}
+
+export class ObjectGetTask implements IObjectOperateTask {
+  request: HTTPRequest;
+  responseBody: unknown;
+
+  constructor(public obj: LCObject, public option?: IObjectGetOption) {}
+
+  makeRequest(): HTTPRequest {
+    const { className, objectId } = this.obj;
+    const req = new HTTPRequest({
+      path: APIPath.get(className, objectId),
+    });
+    if (this.option?.include) {
+      req.query.include = this.option.include.join(',');
+    }
+    this.request = req;
+    return req;
+  }
+
+  async sendRequest(): Promise<unknown> {
+    const res = await this.obj.app._uluru(this.request, this.option);
+    this.responseBody = res.body;
+    return this.responseBody;
+  }
+
+  encodeResponse(): IObject {
+    if (!this.responseBody) {
+      throw new Error('The responseBody is undefined');
+    }
+    if (!this.responseBody || Object.keys(this.responseBody).length === 0) {
       throw new Error('objectId not exists');
     }
     const { app, className } = this.obj;
     return ObjectDecoder.decode(this.responseBody, className).setApp(app);
   }
 
-  async do(option?: IObjectGetOption): Promise<IObject> {
+  async do(): Promise<IObject> {
     if (!this.request) {
-      this.make(option);
+      this.makeRequest();
     }
     if (!this.responseBody) {
-      await this.send(option);
+      await this.sendRequest();
     }
-    return this.parse();
+    return this.encodeResponse();
+  }
+}
+
+export class ObjectUpdateTask extends ObjectGetTask
+  implements IObjectOperateTask {
+  constructor(
+    public obj: LCObject,
+    public data: IObjectData,
+    public option?: IObjectUpdateOption
+  ) {
+    super(obj);
+  }
+
+  makeRequest(): HTTPRequest {
+    removeReservedKeys(this.data);
+    const { className, objectId } = this.obj;
+    const req = new HTTPRequest({
+      method: 'PUT',
+      path: APIPath.get(className, objectId),
+      body: ObjectEncoder.encodeData(this.data),
+    });
+    if (this.option?.include) {
+      req.query.include = this.option.include.join(',');
+    }
+    if (this.option?.fetch) {
+      req.query.fetchWhenSave = 'true';
+    }
+    this.request = req;
+    return req;
+  }
+
+  encodeResponse(): IObject {
+    if (!this.responseBody) {
+      throw new Error('The responseBody is undefined');
+    }
+    const { app, className, objectId } = this.obj;
+    const obj = new LCObject(className, objectId, app);
+    obj.data = ObjectDecoder.decodeData(this.responseBody);
+    return obj;
+  }
+}
+
+export class ObjectDeleteTask extends ObjectGetTask
+  implements IObjectOperateTask {
+  constructor(public obj: LCObject, public option?: IAuthOption) {
+    super(obj);
+  }
+
+  makeRequest(): HTTPRequest {
+    const { className, objectId } = this.obj;
+    const req = new HTTPRequest({
+      method: 'DELETE',
+      path: APIPath.get(className, objectId),
+    });
+    this.request = req;
+    return req;
+  }
+
+  encodeResponse(): IObject {
+    return void 0;
   }
 }
 
@@ -78,22 +190,24 @@ export class LCObject implements IObject {
   }
 
   toJSON(): unknown {
-    function extractData(obj: LCObject): unknown {
-      const items: unknown[] = obj.data ? [obj.data] : [];
-      while (items.length > 0) {
-        const item = items.shift();
-        Object.entries(item).forEach(([key, value]) => {
-          if (!value) return;
-          if (value instanceof LCObject) {
-            item[key] = extractData(value);
-          } else if (typeof value === 'object') {
-            items.push(value);
-          }
-        });
-      }
-      return obj.data;
+    function extractData(data: unknown): unknown {
+      const { constructor } = Object.getPrototypeOf(data);
+      const extracted = new constructor();
+      Object.entries(data).forEach(([key, value]) => {
+        if (!value) return;
+        if (value instanceof LCObject) {
+          extracted[key] = extractData(value.data);
+          return;
+        }
+        if (typeof value === 'object') {
+          extracted[key] = extractData(value);
+        } else {
+          extracted[key] = value;
+        }
+      });
+      return extracted;
     }
-    return extractData(this);
+    return extractData(this.data);
   }
 
   toPointer(): IPointer {
@@ -123,42 +237,16 @@ export class LCObject implements IObject {
     return this;
   }
 
-  sendUpdateRequest(
-    data: IObjectData,
-    option?: IObjectUpdateOption
-  ): Promise<IHTTPResponse> {
-    removeReservedKeys(data);
-    const req = new HTTPRequest({
-      method: 'PUT',
-      path: this._path,
-      body: ObjectEncoder.encodeData(data),
-    });
-    if (option?.include) {
-      req.query.include = option.include.join(',');
-    }
-    if (option?.fetch) {
-      req.query.fetchWhenSave = 'true';
-    }
-    return this.app._uluru(req);
-  }
-
   get(option?: IObjectGetOption): Promise<IObject> {
-    return new ObjectGetTask(this).do(option);
+    return new ObjectGetTask(this, option).do();
   }
 
-  async update(
-    data: IObjectData,
-    option?: IObjectUpdateOption
-  ): Promise<IObject> {
-    const res = await this.sendUpdateRequest(data, option);
-    const obj = new LCObject(this.className, this.objectId, this.app);
-    obj.data = ObjectDecoder.decodeData(res.body);
-    return obj;
+  update(data: IObjectData, option?: IObjectUpdateOption): Promise<IObject> {
+    return new ObjectUpdateTask(this, data, option).do();
   }
 
-  async delete(option?: IAuthOption): Promise<void> {
-    const req = new HTTPRequest({ method: 'DELETE', path: this._path });
-    await this.app._uluru(req, option);
+  delete(option?: IAuthOption): Promise<void> {
+    return new ObjectDeleteTask(this, option).do().then();
   }
 }
 

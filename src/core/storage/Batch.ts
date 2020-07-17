@@ -1,24 +1,15 @@
 import { App } from '../App';
-import { LCObject, ObjectGetTask } from './Object';
-import { IObjectData, IObject } from '../types';
+import {
+  LCObject,
+  ObjectGetTask,
+  ObjectCreateTask,
+  ObjectUpdateTask,
+  ObjectDeleteTask,
+} from './Object';
+import { IObjectData, IObjectOperateTask } from '../types';
 import { HTTPRequest } from '../utils';
 import { Class } from './Class';
 import { UluruError } from '../errors';
-
-export interface BatchResultSuccess {
-  objectId: string;
-  updatedAt: string;
-}
-
-export interface BatchResultError {
-  code: number;
-  error: string;
-}
-
-export interface BatchResult {
-  success?: BatchResultSuccess;
-  error?: BatchResultError;
-}
 
 interface IPromiseHandler {
   resolve: (value?: unknown) => void;
@@ -26,32 +17,51 @@ interface IPromiseHandler {
 }
 
 export class Batch {
-  private promises: Promise<unknown>[] = [];
   private promiseHandlers: IPromiseHandler[] = [];
-  private tasks: Array<ObjectGetTask> = [];
+  private tasks: Array<IObjectOperateTask> = [];
 
   constructor(public app: App) {}
 
   add(clazz: Class, data: IObjectData): Promise<LCObject> {
-    return null;
+    const promise = new Promise((resolve, reject) =>
+      this.promiseHandlers.push({ resolve, reject })
+    );
+    this.tasks.push(new ObjectCreateTask(this.app, clazz.className, data));
+    return promise as Promise<LCObject>;
   }
 
-  get(obj: LCObject): Promise<IObject> {
-    const promise = new Promise((resolve, reject) => {
-      this.promiseHandlers.push({ resolve, reject });
-      this.tasks.push(new ObjectGetTask(obj));
-    });
-    this.promises.push(promise);
-    return promise as Promise<IObject>;
+  get(obj: LCObject): Promise<LCObject> {
+    const promise = new Promise((resolve, reject) =>
+      this.promiseHandlers.push({ resolve, reject })
+    );
+    this.tasks.push(new ObjectGetTask(obj));
+    return promise as Promise<LCObject>;
   }
 
-  async commit(): Promise<void> {
+  update(obj: LCObject, data: IObjectData): Promise<LCObject> {
+    const promise = new Promise((resolve, reject) =>
+      this.promiseHandlers.push({ resolve, reject })
+    );
+    this.tasks.push(new ObjectUpdateTask(obj, data));
+    return promise as Promise<LCObject>;
+  }
+
+  delete(obj: LCObject): Promise<void> {
+    const promise = new Promise((resolve, reject) =>
+      this.promiseHandlers.push({ resolve, reject })
+    );
+    this.tasks.push(new ObjectDeleteTask(obj));
+    return promise as Promise<void>;
+  }
+
+  async commit(): Promise<unknown[]> {
     const requests: unknown[] = [];
     this.tasks.forEach((task) => {
-      task.make();
+      task.makeRequest();
       requests.push({
         method: task.request.method,
         path: task.request.path,
+        body: task.request.body,
       });
     });
     const res = await this.app._uluru(
@@ -67,15 +77,19 @@ export class Batch {
       success?: Record<string, unknown>;
     }[];
 
+    const ret: unknown[] = [];
     results.forEach((result, i) => {
       if (result.error) {
         const { code, error } = result.error;
-        this.promiseHandlers[i].reject(new UluruError(code, error));
-        return;
+        const err = new UluruError(code, error);
+        this.promiseHandlers[i].reject(err);
+        throw err;
       }
-      this.tasks[i].responseBody = result.success ?? {};
-      const obj = this.tasks[i].parse();
+      this.tasks[i].responseBody = result.success;
+      const obj = this.tasks[i].encodeResponse();
       this.promiseHandlers[i].resolve(obj);
+      ret.push(obj);
     });
+    return ret;
   }
 }

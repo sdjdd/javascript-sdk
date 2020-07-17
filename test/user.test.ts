@@ -120,6 +120,29 @@ describe('User', function () {
     });
   });
 
+  describe('#get', function () {
+    const user = new User('test-user-id', testApp);
+
+    it('should send GET request to /users/<objectId>', async function () {
+      platform.pushResponse({ status: 200, body: { objectId: user.objectId } });
+      await user.get();
+      const req = platform.popRequest();
+      req.method.should.eql('GET');
+      req.path.should.eql('/1.1/users/' + user.objectId);
+    });
+
+    it('should update current user when this is current user', async function () {
+      user.data = { key: 'old-value' };
+      UserClass._setCurrentUser(testApp, user);
+      platform.pushResponse({
+        status: 200,
+        body: { objectId: user.objectId, key: 'new-value' },
+      });
+      await user.get();
+      UserClass._getCurrentUser(testApp).data.key.should.eql('new-value');
+    });
+  });
+
   describe('#delete', function () {
     const user = new User('test-user-id', testApp);
 

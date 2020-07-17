@@ -1,7 +1,4 @@
-import {
-  IHTTPResponse,
-  IRequestOption as IAdapterRequestOption,
-} from '../adapters';
+import { IHTTPResponse, IRequestOption, IHTTPRequest } from '../adapters';
 
 export interface IAppInfo {
   appId: string;
@@ -10,7 +7,7 @@ export interface IAppInfo {
   masterKey?: string;
 }
 
-export interface IAuthOption extends IAdapterRequestOption {
+export interface IAuthOption extends IRequestOption {
   sessionToken?: string;
   useMasterKey?: boolean;
 }
@@ -55,6 +52,19 @@ export interface IObjectUpdateOption extends IObjectAddOption {
 
 export interface IObjectGetOption extends IAuthOption {
   include?: string[];
+}
+
+export interface IHTTPRequestWithPath extends IHTTPRequest {
+  path?: string;
+}
+
+export interface IObjectOperateTask {
+  request: IHTTPRequestWithPath;
+  responseBody: unknown;
+  makeRequest(): IHTTPRequestWithPath;
+  sendRequest(): Promise<unknown>;
+  encodeResponse(): IObject;
+  do(): Promise<IObject>;
 }
 
 export type ACLSubject = '*' | string | IUser;
@@ -157,7 +167,7 @@ export interface IUploadFileInfo {
   token: string;
 }
 
-export interface IUploadOption extends IAdapterRequestOption, IAuthOption {
+export interface IUploadOption extends IRequestOption, IAuthOption {
   keepFileName?: boolean;
   header?: Record<string, string>; // send to file provider
 }

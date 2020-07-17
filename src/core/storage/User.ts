@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid';
-import { LCObject } from './Object';
+import { LCObject, ObjectGetTask, ObjectUpdateTask } from './Object';
 import {
   IUser,
   IUserData,
@@ -14,7 +14,7 @@ import {
 } from '../types';
 import { App, KEY_CURRENT_USER } from '../App';
 import { Class } from './Class';
-import { HTTPRequest, removeReservedKeys, deleteKey, assert } from '../utils';
+import { HTTPRequest, deleteKey, assert } from '../utils';
 import { UluruError } from '../errors';
 import { ObjectEncoder, ObjectDecoder } from './ObjectEncoding';
 
@@ -377,48 +377,22 @@ export class User extends LCObject implements IUser {
   }
 
   async get(option?: IObjectGetOption): Promise<User> {
-    const req = new HTTPRequest({ path: this._path });
-    if (option?.include) {
-      req.query.include = option.include.join(',');
-    }
-    const res = await this.app._uluru(req);
-
-    const data = res.body as IObjectDataRaw;
-    if (Object.keys(data).length === 0) {
-      throw new Error(`User with objectId(${this.objectId}) is not exists`);
-    }
-
-    const user = ObjectDecoder.decode(data, this.className) as User;
-    user.setApp(this.app);
+    const task = new ObjectGetTask(this, option);
+    const user = (await task.do()) as User;
 
     if (user.isCurrentUser()) {
       this.app._cacheRemove(KEY_CURRENT_USER);
 
       const userKV = JSON.parse(this.app._kvGet(KEY_CURRENT_USER));
-      Object.assign(userKV, data);
+      Object.assign(userKV, task.responseBody);
       this.app._kvSet(KEY_CURRENT_USER, JSON.stringify(userKV));
     }
     return user;
   }
 
   async update(data: IUserData, option?: IObjectUpdateOption): Promise<User> {
-    removeReservedKeys(data);
-
-    const req = new HTTPRequest({
-      method: 'PUT',
-      path: this._path,
-      body: ObjectEncoder.encodeData(data),
-    });
-    if (option?.include) {
-      req.query.include = option.include.join(',');
-    }
-    if (option?.fetch) {
-      req.query.fetchWhenSave = 'true';
-    }
-    const res = await this.app._uluru(req);
-
-    const _data = res.body as IObjectDataRaw;
-    const user = ObjectDecoder.decode(_data, this.className) as User;
+    const task = new ObjectUpdateTask(this, data, option);
+    const user = (await task.do()) as User;
 
     if (this.isCurrentUser()) {
       this.app._cacheRemove(KEY_CURRENT_USER);
@@ -430,7 +404,7 @@ export class User extends LCObject implements IUser {
           deleteKey(userKV, key);
         }
       });
-      Object.assign(userKV, _data);
+      Object.assign(userKV, task.responseBody);
       this.app._kvSet(KEY_CURRENT_USER, JSON.stringify(userKV));
     }
     return user;
