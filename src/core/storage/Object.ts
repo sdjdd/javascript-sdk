@@ -246,7 +246,7 @@ export class LCObject implements IObject {
   }
 
   delete(option?: IAuthOption): Promise<void> {
-    return new ObjectDeleteTask(this, option).do().then();
+    return new ObjectDeleteTask(this, option).do() as Promise<undefined>;
   }
 }
 
