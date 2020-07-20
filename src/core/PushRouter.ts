@@ -23,7 +23,7 @@ export class PushRouter {
     const res = await app._uluru(req);
 
     const router = res.body as IPushRouterData;
-    router.expireAt = Date.now() + router.ttl;
+    router.expireAt = Date.now() + router.ttl * 1000;
     app._kvSet(KEY_PUSH_ROUTER, JSON.stringify(router));
     return router;
   }
