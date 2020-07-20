@@ -20,17 +20,12 @@ export class ACL implements IACL {
     return acl;
   }
 
-  static readOnlyFor(...subjects: ACLSubject[]): ACL {
+  static grantAllTo(...subjects: ACLSubject[]): ACL {
     const acl = new ACL();
-    subjects.forEach((subject) => acl.allow(subject, 'read'));
-    return acl;
-  }
-
-  static grantAllFor(...subjects: ACLSubject[]): ACL {
-    const acl = new ACL();
-    subjects.forEach((subject) =>
-      acl.allow(subject, 'read').allow(subject, 'write')
-    );
+    subjects.forEach((subject) => {
+      acl.allow(subject, 'read');
+      acl.allow(subject, 'write');
+    });
     return acl;
   }
 
@@ -62,7 +57,10 @@ export class ACL implements IACL {
 
   can(subject: ACLSubject, action: ACLAction): boolean {
     const id = ACL._subjectToId(subject);
-    return this._data[id] && this._data[id][action];
+    if (this._data[id] && this._data[id][action]) {
+      return true;
+    }
+    return false;
   }
 
   toJSON(): Record<string, IACLPrivilege> {
