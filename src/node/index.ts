@@ -1,4 +1,5 @@
 import superagent from 'superagent';
+import { w3cwebsocket } from 'websocket';
 
 import {
   IHTTPRequest,
@@ -120,4 +121,7 @@ export const node: IPlatform = {
   request,
   upload,
   storage: new MemoryStorage(),
+  connect(url: string, protocol?: string): WebSocket {
+    return new w3cwebsocket(url, protocol);
+  },
 };

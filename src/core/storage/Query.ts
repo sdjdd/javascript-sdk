@@ -3,6 +3,7 @@ import { isRegExp, HTTPRequest } from '../utils';
 import { IObject, IQuery, IObjectDataRaw, IQueryFindOption } from '../types';
 import { ObjectDecoder } from './ObjectEncoding';
 import { APIPath } from '../APIPath';
+import { LiveQuery } from './LiveQuery';
 
 export type Condition =
   | '=='
@@ -288,17 +289,13 @@ export class Query implements IQuery {
   }
 
   toString(): string {
-    const str = JSON.stringify(this);
-    if (str === '{}') {
-      return '';
-    }
-    return str;
+    return JSON.stringify(this);
   }
 
   _makeRequest(option?: IQueryFindOption): HTTPRequest {
     const req = new HTTPRequest({ path: APIPath.class(this.className) });
     const where = this.toString();
-    if (where) {
+    if (where !== '{}') {
       req.query.where = where;
     }
     if (this._limit !== undefined) {
@@ -339,5 +336,11 @@ export class Query implements IQuery {
       return void 0;
     }
     return results[0];
+  }
+
+  async subscribe(): Promise<LiveQuery> {
+    const liveQuery = new LiveQuery(this);
+    await liveQuery.subscribe();
+    return liveQuery;
   }
 }

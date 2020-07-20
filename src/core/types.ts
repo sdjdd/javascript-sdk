@@ -188,3 +188,13 @@ export interface IPushRouterData {
   secondary: string;
   expireAt?: number; // SDK only
 }
+
+export type LiveQueryEvent =
+  | 'create'
+  | 'update'
+  | 'enter'
+  | 'leave'
+  | 'delete'
+  | 'login';
+
+export type LiveQueryHandler = (obj: IObject, updatedKeys?: string[]) => void;

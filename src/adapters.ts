@@ -25,27 +25,17 @@ export interface IUploadRequest extends Omit<IHTTPRequest, 'body'> {
 }
 
 export interface IRequestOption {
-  signal?: { onabort(): void };
-  onProgress?: ProgressListener;
+  signal?: {
+    onabort(): void;
+  };
+  onProgress?(event: IProgressEvent): void;
 }
-
-export type Request = (
-  req: IHTTPRequest,
-  option?: IRequestOption
-) => Promise<IHTTPResponse>;
 
 export interface IProgressEvent {
   total: number;
   loaded: number;
   percent: number;
 }
-
-export type ProgressListener = (event: IProgressEvent) => void;
-
-export type Upload = (
-  req: IUploadRequest,
-  option?: IRequestOption
-) => Promise<IHTTPResponse>;
 
 export interface IKVStorage {
   set(key: string, value: string): void;
@@ -58,7 +48,8 @@ export interface IPlatform {
   name?: string;
   version?: string;
   userAgent?: string;
-  request: Request;
-  upload: Upload;
+  request(req: IHTTPRequest, option?: IRequestOption): Promise<IHTTPResponse>;
+  upload(req: IUploadRequest, option?: IRequestOption): Promise<IHTTPResponse>;
   storage: IKVStorage;
+  connect(url: string, protocol?: string): WebSocket;
 }

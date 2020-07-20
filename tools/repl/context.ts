@@ -32,3 +32,4 @@ export const app = new App({
 
 export const db = new Storage(app);
 export const User = db.user();
+export const Test = db.class('Test');

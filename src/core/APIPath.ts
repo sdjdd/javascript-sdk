@@ -12,6 +12,7 @@ export class APIPath {
   static readonly requestMobilePhoneVerify = '/1.1/requestMobilePhoneVerify';
   static readonly requestChangePhoneNumber = '/1.1/requestChangePhoneNumber';
   static readonly changePhoneNumber = '/1.1/changePhoneNumber';
+  static readonly subscribe = '/1.1/LiveQuery/subscribe';
 
   static class(className: string): string {
     switch (className) {

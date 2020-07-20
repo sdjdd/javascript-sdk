@@ -8,6 +8,7 @@ import {
   IRequestOption,
 } from '../adapters';
 import { UluruError } from './errors';
+import { Connection } from './Connection';
 
 export const KEY_CURRENT_USER = 'CURRENT_USER';
 export const KEY_PUSH_ROUTER = 'PUSH_ROUTER';
@@ -19,6 +20,7 @@ export class App {
   private _cache = new Map<string, unknown>();
   private _sessionToken: string;
   private _useMasterKey: boolean;
+  private _connection: Connection;
 
   constructor(config: IAppInfo) {
     this.info = {
@@ -111,6 +113,14 @@ export class App {
   ): Promise<IHTTPResponse> {
     log('LC:Upload', '%O', req);
     return this.platform.upload(req, option);
+  }
+
+  _connect(url: string): Connection {
+    if (!this._connection) {
+      this._connection = new Connection();
+    }
+    this._connection.connect(url);
+    return this._connection;
   }
 
   _kvSet(key: string, value: string): void {
