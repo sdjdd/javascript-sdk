@@ -10,6 +10,7 @@ import { IObjectData, IObjectOperateTask } from '../types';
 import { HTTPRequest } from '../utils';
 import { Class } from './Class';
 import { UluruError } from '../errors';
+import { APIPath } from '../APIPath';
 
 interface IPromiseHandler {
   resolve: (value?: unknown) => void;
@@ -67,7 +68,7 @@ export class Batch {
     const res = await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
-        path: '/1.1/batch',
+        path: APIPath.batch,
         body: { requests },
       })
     );

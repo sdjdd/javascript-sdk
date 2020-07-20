@@ -2,6 +2,7 @@ import { App } from '../App';
 import { isRegExp, HTTPRequest } from '../utils';
 import { IObject, IQuery, IObjectDataRaw, IQueryFindOption } from '../types';
 import { ObjectDecoder } from './ObjectEncoding';
+import { APIPath } from '../APIPath';
 
 export type Condition =
   | '=='
@@ -295,7 +296,7 @@ export class Query implements IQuery {
   }
 
   _makeRequest(option?: IQueryFindOption): HTTPRequest {
-    const req = new HTTPRequest({ path: `/1.1/classes/${this.className}` });
+    const req = new HTTPRequest({ path: APIPath.class(this.className) });
     const where = this.toString();
     if (where) {
       req.query.where = where;

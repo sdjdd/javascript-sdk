@@ -11,7 +11,7 @@ import {
   IObjectAddOption,
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './ObjectEncoding';
-import { APIPath } from './APIPath';
+import { APIPath } from '../APIPath';
 
 export class ObjectCreateTask implements IObjectOperateTask {
   request: HTTPRequest;
@@ -28,7 +28,7 @@ export class ObjectCreateTask implements IObjectOperateTask {
     removeReservedKeys(this.data);
     const req = new HTTPRequest({
       method: 'POST',
-      path: APIPath.get(this.className),
+      path: APIPath.class(this.className),
       body: ObjectEncoder.encodeData(this.data),
     });
     if (this.option?.fetch) {
@@ -72,7 +72,7 @@ export class ObjectGetTask implements IObjectOperateTask {
   makeRequest(): HTTPRequest {
     const { className, objectId } = this.obj;
     const req = new HTTPRequest({
-      path: APIPath.get(className, objectId),
+      path: APIPath.object(className, objectId),
     });
     if (this.option?.include) {
       req.query.include = this.option.include.join(',');
@@ -124,7 +124,7 @@ export class ObjectUpdateTask extends ObjectGetTask
     const { className, objectId } = this.obj;
     const req = new HTTPRequest({
       method: 'PUT',
-      path: APIPath.get(className, objectId),
+      path: APIPath.object(className, objectId),
       body: ObjectEncoder.encodeData(this.data),
     });
     if (this.option?.include) {
@@ -158,7 +158,7 @@ export class ObjectDeleteTask extends ObjectGetTask
     const { className, objectId } = this.obj;
     const req = new HTTPRequest({
       method: 'DELETE',
-      path: APIPath.get(className, objectId),
+      path: APIPath.object(className, objectId),
     });
     this.request = req;
     return req;
@@ -179,10 +179,6 @@ export class LCObject implements IObject {
     this.app = app;
     this.className = className;
     this.objectId = objectId;
-  }
-
-  protected get _path(): string {
-    return `/1.1/classes/${this.className}/${this.objectId}`;
   }
 
   toJSON(): unknown {

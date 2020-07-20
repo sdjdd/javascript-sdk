@@ -17,6 +17,7 @@ import { Class } from './Class';
 import { HTTPRequest, deleteKey, assert } from '../utils';
 import { UluruError } from '../errors';
 import { ObjectEncoder, ObjectDecoder } from './ObjectEncoding';
+import { APIPath } from '../APIPath';
 
 export class UserClass extends Class {
   constructor(app: App) {
@@ -56,10 +57,10 @@ export class UserClass extends Class {
   }
 
   async become(sessionToken: string): Promise<User> {
-    const res = await this.app._uluru(
-      new HTTPRequest({ path: '/1.1/users/me' }),
-      { sessionToken }
-    );
+    const req = new HTTPRequest({ path: APIPath.me });
+    const res = await this.app._uluru(req, {
+      sessionToken,
+    });
 
     const data = res.body as IObjectDataRaw;
     const user = ObjectDecoder.decode(data, this.className) as User;
@@ -73,7 +74,7 @@ export class UserClass extends Class {
     assert(data.password, 'The password must be provided');
     const req = new HTTPRequest({
       method: 'POST',
-      path: '/1.1/users',
+      path: APIPath.class(this.className),
       body: data,
     });
     const res = await this.app._uluru(req, option);
@@ -98,7 +99,7 @@ export class UserClass extends Class {
     const res = await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
-        path: '/1.1/login',
+        path: APIPath.login,
         body: data,
       })
     );
@@ -142,7 +143,7 @@ export class UserClass extends Class {
   ): Promise<User> {
     const req = new HTTPRequest({
       method: 'POST',
-      path: '/1.1/users',
+      path: APIPath.class(this.className),
       body: { authData: { [platform]: authData } },
     });
     if (option?.failOnNotExist) {
@@ -180,7 +181,7 @@ export class UserClass extends Class {
     await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
-        path: '/1.1/requestEmailVerify',
+        path: APIPath.requestEmailVerify,
         body: { email },
       })
     );
@@ -197,7 +198,7 @@ export class UserClass extends Class {
     await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
-        path: '/1.1/requestLoginSmsCode',
+        path: APIPath.requestLoginSmsCode,
         body,
       }),
       option
@@ -215,7 +216,7 @@ export class UserClass extends Class {
     await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
-        path: '/1.1/requestMobilePhoneVerify',
+        path: APIPath.requestMobilePhoneVerify,
         body,
       }),
       option
@@ -226,7 +227,7 @@ export class UserClass extends Class {
     await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
-        path: '/1.1/requestPasswordReset',
+        path: APIPath.requestPasswordReset,
         body: { email },
       })
     );
@@ -243,7 +244,7 @@ export class UserClass extends Class {
     await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
-        path: '/1.1/requestPasswordResetBySmsCode',
+        path: APIPath.requestPasswordResetBySmsCode,
         body,
       }),
       option
@@ -254,7 +255,7 @@ export class UserClass extends Class {
     await this.app._uluru(
       new HTTPRequest({
         method: 'PUT',
-        path: '/1.1/resetPasswordBySmsCode/' + code,
+        path: APIPath.resetPasswordBySmsCode(code),
         body: { password },
       })
     );
@@ -264,7 +265,7 @@ export class UserClass extends Class {
     await this.app._uluru(
       new HTTPRequest({
         method: 'POST',
-        path: '/1.1/verifyMobilePhone/' + code,
+        path: APIPath.verifyMobilePhone(code),
       })
     );
   }
@@ -280,7 +281,7 @@ export class UserClass extends Class {
     }
     const req = new HTTPRequest({
       method: 'POST',
-      path: '/1.1/requestChangePhoneNumber',
+      path: APIPath.requestChangePhoneNumber,
       body,
     });
     await this.app._uluru(req, option);
@@ -293,7 +294,7 @@ export class UserClass extends Class {
   ): Promise<void> {
     const req = new HTTPRequest({
       method: 'POST',
-      path: '/1.1/changePhoneNumber',
+      path: APIPath.changePhoneNumber,
       body: { mobilePhoneNumber, code },
     });
     await this.app._uluru(req, option);
@@ -309,10 +310,6 @@ export class User extends LCObject implements IUser {
 
   get sessionToken(): string {
     return this.data?.sessionToken as string;
-  }
-
-  protected get _path(): string {
-    return '/1.1/users/' + this.objectId;
   }
 
   isCurrentUser(): boolean {
@@ -333,7 +330,7 @@ export class User extends LCObject implements IUser {
 
   async isAuthenticated(): Promise<boolean> {
     try {
-      const req = new HTTPRequest({ path: '/1.1/users/me' });
+      const req = new HTTPRequest({ path: APIPath.me });
       await this.app._uluru(req, { sessionToken: this.sessionToken });
       return true;
     } catch (err) {
@@ -355,7 +352,7 @@ export class User extends LCObject implements IUser {
 
     const req = new HTTPRequest({
       method: 'PUT',
-      path: `/1.1/users/${this.objectId}/updatePassword`,
+      path: APIPath.updatePassword(this.objectId),
       body: { old_password: oldPassword, new_password: newPassword },
     });
     const res = await this.app._uluru(req, {

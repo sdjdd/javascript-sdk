@@ -15,6 +15,7 @@ import { LCObject } from './Object';
 import { ObjectDecoder } from './ObjectEncoding';
 import { User, UserClass } from './User';
 import { ObjectFactory } from './ObjectFactory';
+import { APIPath } from '../APIPath';
 
 ObjectFactory.registerDefaultHandler(
   (className, objectId) => new LCObject(className, objectId)
@@ -50,7 +51,7 @@ export class Storage {
   async upload(file: IFile, option?: IUploadOption): Promise<IObject> {
     const req = new HTTPRequest({
       method: 'POST',
-      path: '/1.1/fileTokens',
+      path: APIPath.fileTokens,
       body: {
         key: file.key,
         name: file.name,
@@ -84,7 +85,7 @@ export class Storage {
     return this.app._uluru(
       new HTTPRequest({
         method: 'POST',
-        path: '/1.1/fileCallback',
+        path: APIPath.fileCallback,
         body: { token, result: success },
       })
     );
