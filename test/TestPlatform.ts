@@ -20,25 +20,6 @@ export class TestPlatform implements IPlatform {
   };
   private _errors: Error[] = [];
 
-  pushResponse(res: IHTTPResponse): void {
-    this._responses.push(res);
-  }
-
-  pushError(err: Error): void {
-    this._errors.push(err);
-  }
-
-  popRequest(): HTTPRequest {
-    if (this._requests.length === 0) {
-      throw new Error('No request available');
-    }
-    return this._requests.pop();
-  }
-
-  setDefaultResponse(res: IHTTPResponse): void {
-    this._defaultResponse = res;
-  }
-
   async request(req: HTTPRequest): Promise<IHTTPResponse> {
     this._requests.push(req);
     if (this._errors.length > 0) {
@@ -58,6 +39,29 @@ export class TestPlatform implements IPlatform {
       status: 200,
       body: {},
     };
+  }
+
+  connect(url: string, protocol?: string): WebSocket {
+    return null;
+  }
+
+  pushResponse(res: IHTTPResponse): void {
+    this._responses.push(res);
+  }
+
+  pushError(err: Error): void {
+    this._errors.push(err);
+  }
+
+  popRequest(): HTTPRequest {
+    if (this._requests.length === 0) {
+      throw new Error('No request available');
+    }
+    return this._requests.pop();
+  }
+
+  setDefaultResponse(res: IHTTPResponse): void {
+    this._defaultResponse = res;
   }
 }
 
