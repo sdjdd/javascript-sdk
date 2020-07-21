@@ -5,6 +5,7 @@ import { IPlatform } from '../adapters';
 
 const RETRY_COUNT = 10;
 const RETRY_TIMEOUT = 100; // ms
+const HEARTBEAT_PERIOD = 1000 * 180;
 
 export class Connection extends EventEmitter<'open' | 'message' | 'error'> {
   private url: string;
@@ -17,6 +18,7 @@ export class Connection extends EventEmitter<'open' | 'message' | 'error'> {
   private retryTimer: ReturnType<typeof setTimeout>;
   private sendBuffer: Array<string | ArrayBuffer> = [];
   private platform: IPlatform;
+  private heartbeatTimer: ReturnType<typeof setInterval>;
 
   constructor() {
     super();
@@ -61,9 +63,20 @@ export class Connection extends EventEmitter<'open' | 'message' | 'error'> {
       this.retryTimeout = RETRY_TIMEOUT;
       this.flush();
       this.emit('open');
+
+      if (!this.heartbeatTimer) {
+        this.heartbeatTimer = setInterval(
+          this.heartbeat.bind(this),
+          HEARTBEAT_PERIOD
+        );
+      }
     };
 
     this.socket.onmessage = ({ data }) => {
+      if (data === '{}') {
+        log('LC:Connection:heartbeat', 'pong');
+        return;
+      }
       log('LC:Connection:recv', data);
       this.emit('message', this.decoder ? this.decoder(data) : data);
     };
@@ -94,6 +107,13 @@ export class Connection extends EventEmitter<'open' | 'message' | 'error'> {
     while (this.sendBuffer.length > 0) {
       const data = this.sendBuffer.shift();
       this.socket.send(this.encoder ? this.encoder(data) : data);
+    }
+  }
+
+  heartbeat(): void {
+    if (this.socket && this.socket.readyState === this.socket.OPEN) {
+      log('LC:Connection:heartbeat', 'ping');
+      this.socket.send('{}');
     }
   }
 
