@@ -1,4 +1,6 @@
-/*.json
-/dist
-/env.ts
 /.github
+/.nyc_output
+/coverage
+/dist
+/*.json
+/env.ts

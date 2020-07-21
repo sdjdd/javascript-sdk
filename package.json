@@ -17,7 +17,8 @@
     "test": "mocha",
     "coverage": "nyc npm run test",
     "repl": "ts-node ./tools/repl",
-    "lint": "eslint --ext=ts,js --max-warnings=0 ."
+    "lint": "eslint --ext=ts,js --max-warnings=0 .",
+    "prettier": "prettier --write ."
   },
   "dependencies": {
     "@types/superagent": "^4.1.7",
