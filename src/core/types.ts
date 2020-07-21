@@ -196,5 +196,3 @@ export type LiveQueryEvent =
   | 'leave'
   | 'delete'
   | 'login';
-
-export type LiveQueryHandler = (obj: IObject, updatedKeys?: string[]) => void;

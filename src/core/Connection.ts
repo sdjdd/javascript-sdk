@@ -14,10 +14,9 @@ export class Connection extends EventEmitter<'open' | 'message' | 'error'> {
   private decoder: (data: string | ArrayBuffer) => string | ArrayBuffer;
   private retryCount = RETRY_COUNT;
   private retryTimeout = RETRY_TIMEOUT;
-  private retryTimerID: number;
+  private retryTimer: ReturnType<typeof setTimeout>;
   private sendBuffer: Array<string | ArrayBuffer> = [];
   private platform: IPlatform;
-  private shutdown = false;
 
   constructor() {
     super();
@@ -25,11 +24,18 @@ export class Connection extends EventEmitter<'open' | 'message' | 'error'> {
   }
 
   connect(url: string, protocol?: string): void {
-    if (this.socket && this.socket.readyState === this.socket.OPEN) {
-      if (this.url === url) return;
-      this.socket.onclose = null;
-      this.socket.close();
-      clearTimeout(this.retryTimerID);
+    if (this.socket) {
+      if (
+        this.socket.readyState === this.socket.OPEN ||
+        this.socket.readyState === this.socket.CONNECTING
+      ) {
+        if (this.url === url) return;
+        this.socket.onclose = null;
+        this.socket.close();
+      }
+      if (this.retryTimer) {
+        clearTimeout(this.retryTimer);
+      }
     }
 
     this.url = url;
@@ -37,17 +43,15 @@ export class Connection extends EventEmitter<'open' | 'message' | 'error'> {
     this.socket = this.platform.connect(url, protocol);
 
     const reconnect = () => {
-      if (this.shutdown) return;
       log('LC:Connection:close', 'try to reconnect');
       this.retryCount--;
       if (this.retryCount < 0) {
         throw new Error('Cannot reconnect: too many retries');
       }
-      this.retryTimerID = setTimeout(
+      this.retryTimer = setTimeout(
         () => this.connect(this.url, this.protocol),
         this.retryTimeout
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ) as any;
+      );
       this.retryTimeout *= 2;
     };
 
@@ -55,22 +59,24 @@ export class Connection extends EventEmitter<'open' | 'message' | 'error'> {
       log('LC:Connection:connected', 'connection established');
       this.retryCount = RETRY_COUNT;
       this.retryTimeout = RETRY_TIMEOUT;
-
-      this.socket.onmessage = ({ data }) => {
-        log('LC:Connection:recv', data);
-        this.emit('message', this.decoder ? this.decoder(data) : data);
-      };
-
       this.flush();
       this.emit('open');
     };
 
+    this.socket.onmessage = ({ data }) => {
+      log('LC:Connection:recv', data);
+      this.emit('message', this.decoder ? this.decoder(data) : data);
+    };
+
     this.socket.onerror = (event) => {
-      log('LC:Connection:error', event);
-      this.emit('error', event);
-      if (this.socket.readyState === this.socket.CLOSED) {
+      // log('LC:Connection:error', event);
+      if (
+        this.socket.readyState === this.socket.CLOSED ||
+        this.socket.readyState === this.socket.CLOSING
+      ) {
         reconnect();
       }
+      this.emit('error', event);
     };
   }
 
@@ -82,15 +88,12 @@ export class Connection extends EventEmitter<'open' | 'message' | 'error'> {
   }
 
   private flush(): void {
-    if (this.socket && this.socket.readyState === this.socket.OPEN) {
-      while (this.sendBuffer.length > 0) {
-        const data = this.sendBuffer.shift();
-        if (this.encoder) {
-          this.socket.send(this.encoder(data));
-        } else {
-          this.socket.send(data);
-        }
-      }
+    if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
+      return;
+    }
+    while (this.sendBuffer.length > 0) {
+      const data = this.sendBuffer.shift();
+      this.socket.send(this.encoder ? this.encoder(data) : data);
     }
   }
 
