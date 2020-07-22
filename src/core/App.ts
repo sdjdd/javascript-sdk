@@ -8,7 +8,7 @@ import {
   IRequestOption,
 } from '../adapters';
 import { UluruError } from './errors';
-import { Connection } from './Connection';
+import { IMConnection } from './realtime/IMConnection';
 
 export const KEY_CURRENT_USER = 'CURRENT_USER';
 export const KEY_PUSH_ROUTER = 'PUSH_ROUTER';
@@ -20,7 +20,7 @@ export class App {
   private _cache = new Map<string, unknown>();
   private _sessionToken: string;
   private _useMasterKey: boolean;
-  private _connection: Connection;
+  private _connection: IMConnection;
 
   constructor(config: IAppInfo) {
     this.info = {
@@ -115,11 +115,10 @@ export class App {
     return this.platform.upload(req, option);
   }
 
-  _connect(url: string): Connection {
+  _getConnection(): IMConnection {
     if (!this._connection) {
-      this._connection = new Connection();
+      this._connection = new IMConnection(this);
     }
-    this._connection.connect(url);
     return this._connection;
   }
 

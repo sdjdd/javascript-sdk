@@ -1,14 +1,18 @@
 import { EventEmitter } from 'eventemitter3';
-import { log } from './utils';
-import { PlatformSupport } from './Platform';
-import { IPlatform } from '../adapters';
+import { log } from '../utils';
+import { PlatformSupport } from '../Platform';
+import { IPlatform } from '../../adapters';
+import { App } from '../App';
+import { PushRouter } from '../push/PushRouter';
 
 const RETRY_COUNT = 10;
 const RETRY_TIMEOUT = 100; // ms
+const MAX_RETRY_TIMEOUT = 30 * 1000;
 const HEARTBEAT_PERIOD = 1000 * 180;
+const DEFAULT_PROTOCOL = 'lc.json.3';
 
-export class Connection extends EventEmitter<'open' | 'message' | 'error'> {
-  private url: string;
+export class IMConnection extends EventEmitter<'open' | 'message' | 'error'> {
+  private app: App;
   private protocol: string;
   private socket: WebSocket;
   private encoder: (data: string | ArrayBuffer) => string | ArrayBuffer;
@@ -19,46 +23,48 @@ export class Connection extends EventEmitter<'open' | 'message' | 'error'> {
   private sendBuffer: Array<string | ArrayBuffer> = [];
   private platform: IPlatform;
   private heartbeatTimer: ReturnType<typeof setInterval>;
+  private _nextIndex = 1;
 
-  constructor() {
+  constructor(app: App, protocol?: string) {
     super();
+    this.app = app;
+    this.protocol = protocol ?? DEFAULT_PROTOCOL;
     this.platform = PlatformSupport.getPlatform();
+    this.connect();
   }
 
-  connect(url: string, protocol?: string): void {
+  get nextIndex(): number {
+    return this._nextIndex++;
+  }
+
+  private async connect(useRouterCache = true): Promise<void> {
     if (this.socket) {
-      if (
-        this.socket.readyState === this.socket.OPEN ||
-        this.socket.readyState === this.socket.CONNECTING
-      ) {
-        if (this.url === url) return;
-        this.socket.onclose = null;
-        this.socket.close();
-      }
-      if (this.retryTimer) {
-        clearTimeout(this.retryTimer);
-      }
+      this.socket.close();
+    }
+    if (this.retryTimer) {
+      clearTimeout(this.retryTimer);
     }
 
-    this.url = url;
-    this.protocol = protocol;
-    this.socket = this.platform.connect(url, protocol);
+    const router = await PushRouter.get(this.app, useRouterCache);
+    const urls = [router.server, router.secondary];
+    this.socket = this.platform.connect(urls[0], this.protocol);
+    log('LC:IM:connect', 'url = %s, protocol = %s', urls[0], this.protocol);
 
     const reconnect = () => {
-      log('LC:Connection:close', 'try to reconnect');
+      log('LC:IM:close', 'try to reconnect');
       this.retryCount--;
       if (this.retryCount < 0) {
         throw new Error('Cannot reconnect: too many retries');
       }
-      this.retryTimer = setTimeout(
-        () => this.connect(this.url, this.protocol),
-        this.retryTimeout
-      );
+      this.retryTimer = setTimeout(() => this.connect(), this.retryTimeout);
       this.retryTimeout *= 2;
+      if (this.retryTimeout > MAX_RETRY_TIMEOUT) {
+        this.retryTimeout = MAX_RETRY_TIMEOUT;
+      }
     };
 
     this.socket.onopen = () => {
-      log('LC:Connection:connected', 'connection established');
+      log('LC:IM:connected', 'connection established');
       this.retryCount = RETRY_COUNT;
       this.retryTimeout = RETRY_TIMEOUT;
       this.flush();
@@ -73,16 +79,19 @@ export class Connection extends EventEmitter<'open' | 'message' | 'error'> {
     };
 
     this.socket.onmessage = ({ data }) => {
+      if (this.decoder) {
+        data = this.decoder(data);
+      }
       if (data === '{}') {
-        log('LC:Connection:heartbeat', 'pong');
+        log('LC:IM:heartbeat', 'pong');
         return;
       }
-      log('LC:Connection:recv', data);
+      log('LC:IM:recv', data);
       this.emit('message', this.decoder ? this.decoder(data) : data);
     };
 
     this.socket.onerror = (event) => {
-      // log('LC:Connection:error', event);
+      // log('LC:IM:error', event);
       if (
         this.socket.readyState === this.socket.CLOSED ||
         this.socket.readyState === this.socket.CLOSING
@@ -112,20 +121,18 @@ export class Connection extends EventEmitter<'open' | 'message' | 'error'> {
 
   heartbeat(): void {
     if (this.socket && this.socket.readyState === this.socket.OPEN) {
-      log('LC:Connection:heartbeat', 'ping');
+      log('LC:IM:heartbeat', 'ping');
       this.socket.send('{}');
     }
   }
 
   send(data: string | ArrayBuffer): void {
-    log('LC:Connection:send', data);
+    log('LC:IM:send', data);
     this.sendBuffer.push(data);
     this.flush();
   }
 
   close(): void {
-    if (this.socket && this.socket.readyState !== this.socket.CLOSED) {
-      this.socket.close();
-    }
+    this.socket.close();
   }
 }

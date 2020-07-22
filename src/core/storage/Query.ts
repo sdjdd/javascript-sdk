@@ -338,9 +338,7 @@ export class Query implements IQuery {
     return results[0];
   }
 
-  async subscribe(): Promise<LiveQuery> {
-    const liveQuery = new LiveQuery(this);
-    await liveQuery.subscribe();
-    return liveQuery;
+  subscribe(): LiveQuery {
+    return new LiveQuery(this);
   }
 }
