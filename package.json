@@ -19,18 +19,16 @@
     "fmt": "prettier --write ."
   },
   "dependencies": {
-    "@types/superagent": "^4.1.7",
+    "@leancloud/adapter-types": "file:../adapters/packages/adapter-types",
+    "@leancloud/platform-adapters-node": "file:../adapters/packages/platform-adapters-node",
     "base64-arraybuffer": "^0.2.0",
     "debug": "^4.1.1",
     "eventemitter3": "^4.0.4",
-    "superagent": "^5.2.2",
     "uuid": "^8.1.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^12.0.0",
-    "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^8.0.0",
-    "@rollup/plugin-replace": "^2.3.3",
     "@rollup/plugin-typescript": "^3.1.1",
     "@types/mocha": "^7.0.2",
     "@typescript-eslint/eslint-plugin": "^3.1.0",
