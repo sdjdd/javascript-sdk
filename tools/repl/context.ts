@@ -1,6 +1,6 @@
 import * as env from '../../env';
-import { App, Storage, PlatformSupport, debug } from '../../src/core';
-import { node } from '../../src/node';
+import { App, Storage, debug, Adapters } from '../../src/core';
+import * as adapters from '@leancloud/platform-adapters-node';
 
 export { env };
 export {
@@ -20,7 +20,7 @@ export {
 
 debug.enable('LC*');
 
-PlatformSupport.setPlatform(node);
+Adapters.set(adapters);
 
 export const app = new App({
   appId: env.appId,

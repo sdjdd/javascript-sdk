@@ -14,7 +14,7 @@ import {
 } from '../types';
 import { App, KEY_CURRENT_USER } from '../App';
 import { Class } from './Class';
-import { HTTPRequest, deleteKey, assert } from '../utils';
+import { deleteKey, assert } from '../utils';
 import { UluruError } from '../errors';
 import { ObjectEncoder, ObjectDecoder } from './ObjectEncoding';
 import { APIPath } from '../APIPath';
@@ -57,11 +57,7 @@ export class UserClass extends Class {
   }
 
   async become(sessionToken: string): Promise<User> {
-    const req = new HTTPRequest({ path: APIPath.me });
-    const res = await this.app._uluru(req, {
-      sessionToken,
-    });
-
+    const res = await this.app._uluru({ path: APIPath.me }, { sessionToken });
     const data = res.body as IObjectDataRaw;
     const user = ObjectDecoder.decode(data, this.className) as User;
     user.setApp(this.app);
@@ -72,12 +68,14 @@ export class UserClass extends Class {
   async signUp(data: IUserData, option?: IAuthOption): Promise<User> {
     assert(data.username, 'The username must be provided');
     assert(data.password, 'The password must be provided');
-    const req = new HTTPRequest({
-      method: 'POST',
-      path: APIPath.class(this.className),
-      body: data,
-    });
-    const res = await this.app._uluru(req, option);
+    const res = await this.app._uluru(
+      {
+        method: 'POST',
+        path: APIPath.class(this.className),
+        body: data,
+      },
+      option
+    );
     const _data = res.body as IObjectDataRaw;
     const user = ObjectDecoder.decode(_data, this.className) as User;
     user.setApp(this.app);
@@ -96,13 +94,11 @@ export class UserClass extends Class {
   }
 
   private async _logInWithData(data: IUserData): Promise<User> {
-    const res = await this.app._uluru(
-      new HTTPRequest({
-        method: 'POST',
-        path: APIPath.login,
-        body: data,
-      })
-    );
+    const res = await this.app._uluru({
+      method: 'POST',
+      path: APIPath.login,
+      body: data,
+    });
     const _data = res.body as IObjectDataRaw;
     const user = ObjectDecoder.decode(_data, this.className) as User;
     user.setApp(this.app);
@@ -141,16 +137,16 @@ export class UserClass extends Class {
     authData: Record<string, unknown>,
     option?: IUserLoginWithAuthDataOption
   ): Promise<User> {
-    const req = new HTTPRequest({
+    const res = await this.app._uluru({
       method: 'POST',
       path: APIPath.class(this.className),
-      body: { authData: { [platform]: authData } },
+      body: {
+        authData: { [platform]: authData },
+      },
+      query: {
+        failOnNotExist: option?.failOnNotExist ? 'true' : undefined,
+      },
     });
-    if (option?.failOnNotExist) {
-      req.query.failOnNotExist = 'true';
-    }
-    const res = await this.app._uluru(req);
-
     const data = res.body as IObjectDataRaw;
     const user = ObjectDecoder.decode(data, this.className) as User;
     user.setApp(this.app);
@@ -178,13 +174,11 @@ export class UserClass extends Class {
   }
 
   async requestEmailVerify(email: string): Promise<void> {
-    await this.app._uluru(
-      new HTTPRequest({
-        method: 'POST',
-        path: APIPath.requestEmailVerify,
-        body: { email },
-      })
-    );
+    await this.app._uluru({
+      method: 'POST',
+      path: APIPath.requestEmailVerify,
+      body: { email },
+    });
   }
 
   async requestLoginSmsCode(
@@ -196,11 +190,11 @@ export class UserClass extends Class {
       body.validate_token = option.validateToken;
     }
     await this.app._uluru(
-      new HTTPRequest({
+      {
         method: 'POST',
         path: APIPath.requestLoginSmsCode,
         body,
-      }),
+      },
       option
     );
   }
@@ -214,23 +208,21 @@ export class UserClass extends Class {
       body.validate_token = option.validateToken;
     }
     await this.app._uluru(
-      new HTTPRequest({
+      {
         method: 'POST',
         path: APIPath.requestMobilePhoneVerify,
         body,
-      }),
+      },
       option
     );
   }
 
   async requestPasswordReset(email: string): Promise<void> {
-    await this.app._uluru(
-      new HTTPRequest({
-        method: 'POST',
-        path: APIPath.requestPasswordReset,
-        body: { email },
-      })
-    );
+    await this.app._uluru({
+      method: 'POST',
+      path: APIPath.requestPasswordReset,
+      body: { email },
+    });
   }
 
   async requestPasswordResetBySmsCode(
@@ -242,32 +234,28 @@ export class UserClass extends Class {
       body.validate_token = option.validateToken;
     }
     await this.app._uluru(
-      new HTTPRequest({
+      {
         method: 'POST',
         path: APIPath.requestPasswordResetBySmsCode,
         body,
-      }),
+      },
       option
     );
   }
 
   async resetPasswordBySmsCode(code: string, password: string): Promise<void> {
-    await this.app._uluru(
-      new HTTPRequest({
-        method: 'PUT',
-        path: APIPath.resetPasswordBySmsCode(code),
-        body: { password },
-      })
-    );
+    await this.app._uluru({
+      method: 'PUT',
+      path: APIPath.resetPasswordBySmsCode(code),
+      body: { password },
+    });
   }
 
   async verifyMobilePhone(code: string): Promise<void> {
-    await this.app._uluru(
-      new HTTPRequest({
-        method: 'POST',
-        path: APIPath.verifyMobilePhone(code),
-      })
-    );
+    await this.app._uluru({
+      method: 'POST',
+      path: APIPath.verifyMobilePhone(code),
+    });
   }
 
   async requestChangePhoneNumber(
@@ -279,12 +267,14 @@ export class UserClass extends Class {
     if (ttl) {
       body.ttl = ttl;
     }
-    const req = new HTTPRequest({
-      method: 'POST',
-      path: APIPath.requestChangePhoneNumber,
-      body,
-    });
-    await this.app._uluru(req, option);
+    await this.app._uluru(
+      {
+        method: 'POST',
+        path: APIPath.requestChangePhoneNumber,
+        body,
+      },
+      option
+    );
   }
 
   async changePhoneNumber(
@@ -292,12 +282,14 @@ export class UserClass extends Class {
     code: string,
     option?: IAuthOption
   ): Promise<void> {
-    const req = new HTTPRequest({
-      method: 'POST',
-      path: APIPath.changePhoneNumber,
-      body: { mobilePhoneNumber, code },
-    });
-    await this.app._uluru(req, option);
+    await this.app._uluru(
+      {
+        method: 'POST',
+        path: APIPath.changePhoneNumber,
+        body: { mobilePhoneNumber, code },
+      },
+      option
+    );
   }
 }
 
@@ -330,8 +322,10 @@ export class User extends LCObject implements IUser {
 
   async isAuthenticated(): Promise<boolean> {
     try {
-      const req = new HTTPRequest({ path: APIPath.me });
-      await this.app._uluru(req, { sessionToken: this.sessionToken });
+      await this.app._uluru(
+        { path: APIPath.me },
+        { sessionToken: this.sessionToken }
+      );
       return true;
     } catch (err) {
       if ((err as UluruError).code !== 211) {
@@ -350,15 +344,17 @@ export class User extends LCObject implements IUser {
       throw new Error('The user is not logged in');
     }
 
-    const req = new HTTPRequest({
-      method: 'PUT',
-      path: APIPath.updatePassword(this.objectId),
-      body: { old_password: oldPassword, new_password: newPassword },
-    });
-    const res = await this.app._uluru(req, {
-      sessionToken: this.sessionToken,
-      ...option,
-    });
+    const res = await this.app._uluru(
+      {
+        method: 'PUT',
+        path: APIPath.updatePassword(this.objectId),
+        body: { old_password: oldPassword, new_password: newPassword },
+      },
+      {
+        sessionToken: this.sessionToken,
+        ...option,
+      }
+    );
 
     const data = res.body as IUserData;
     this.data.sessionToken = data.sessionToken;

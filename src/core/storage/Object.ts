@@ -1,5 +1,5 @@
 import { App } from '../App';
-import { removeReservedKeys, HTTPRequest } from '../utils';
+import { removeReservedKeys } from '../utils';
 import {
   IObject,
   IPointer,
@@ -12,9 +12,10 @@ import {
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './ObjectEncoding';
 import { APIPath } from '../APIPath';
+import { IHTTPRequest } from '../Adapters';
 
 export class ObjectCreateTask implements IObjectOperateTask {
-  request: HTTPRequest;
+  request: IHTTPRequest;
   responseBody: unknown;
 
   constructor(
@@ -24,18 +25,17 @@ export class ObjectCreateTask implements IObjectOperateTask {
     public option?: IObjectAddOption
   ) {}
 
-  makeRequest(): HTTPRequest {
+  makeRequest(): IHTTPRequest {
     removeReservedKeys(this.data);
-    const req = new HTTPRequest({
+    this.request = {
       method: 'POST',
       path: APIPath.class(this.className),
       body: ObjectEncoder.encodeData(this.data),
-    });
-    if (this.option?.fetch) {
-      req.query.fetchWhenSave = 'true';
-    }
-    this.request = req;
-    return req;
+      query: {
+        fetchWhenSave: this.option?.fetch ? 'true' : undefined,
+      },
+    };
+    return this.request;
   }
 
   async sendRequest(): Promise<unknown> {
@@ -64,21 +64,20 @@ export class ObjectCreateTask implements IObjectOperateTask {
 }
 
 export class ObjectGetTask implements IObjectOperateTask {
-  request: HTTPRequest;
+  request: IHTTPRequest;
   responseBody: unknown;
 
   constructor(public obj: LCObject, public option?: IObjectGetOption) {}
 
-  makeRequest(): HTTPRequest {
+  makeRequest(): IHTTPRequest {
     const { className, objectId } = this.obj;
-    const req = new HTTPRequest({
+    this.request = {
       path: APIPath.object(className, objectId),
-    });
-    if (this.option?.include) {
-      req.query.include = this.option.include.join(',');
-    }
-    this.request = req;
-    return req;
+      query: {
+        include: this.option?.include?.join(','),
+      },
+    };
+    return this.request;
   }
 
   async sendRequest(): Promise<unknown> {
@@ -119,22 +118,19 @@ export class ObjectUpdateTask extends ObjectGetTask
     super(obj);
   }
 
-  makeRequest(): HTTPRequest {
+  makeRequest(): IHTTPRequest {
     removeReservedKeys(this.data);
     const { className, objectId } = this.obj;
-    const req = new HTTPRequest({
+    this.request = {
       method: 'PUT',
       path: APIPath.object(className, objectId),
       body: ObjectEncoder.encodeData(this.data),
-    });
-    if (this.option?.include) {
-      req.query.include = this.option.include.join(',');
-    }
-    if (this.option?.fetch) {
-      req.query.fetchWhenSave = 'true';
-    }
-    this.request = req;
-    return req;
+      query: {
+        include: this.option?.include?.join(','),
+        fetchWhenSave: this.option?.fetch ? 'true' : undefined,
+      },
+    };
+    return this.request;
   }
 
   encodeResponse(): IObject {
@@ -154,14 +150,13 @@ export class ObjectDeleteTask extends ObjectGetTask
     super(obj);
   }
 
-  makeRequest(): HTTPRequest {
+  makeRequest(): IHTTPRequest {
     const { className, objectId } = this.obj;
-    const req = new HTTPRequest({
+    this.request = {
       method: 'DELETE',
       path: APIPath.object(className, objectId),
-    });
-    this.request = req;
-    return req;
+    };
+    return this.request;
   }
 
   encodeResponse(): IObject {

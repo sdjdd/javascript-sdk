@@ -9,10 +9,8 @@
   },
   "scripts": {
     "clean": "rm -rf ./dist",
-    "build": "npm run clean && npm run build:core && npm run build:platform",
+    "build": "npm run clean && npm run build:core",
     "build:core": "rollup -c rollup/core.config.js",
-    "build:platform": "npm run build:node",
-    "build:node": "rollup -c rollup/node.config.js",
     "doc": "typedoc --out docs src",
     "test": "mocha",
     "coverage": "nyc npm run test",

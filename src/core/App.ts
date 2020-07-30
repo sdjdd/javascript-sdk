@@ -1,26 +1,17 @@
-import { PlatformSupport } from './Platform';
 import { IAppInfo, IAuthOption } from './types';
-import { log, HTTPRequest, fail } from './utils';
-import {
-  IPlatform,
-  IHTTPResponse,
-  IUploadRequest,
-  IRequestOption,
-} from '../adapters';
+import { log, fail } from './utils';
 import { UluruError } from './errors';
-import { IMConnection } from './realtime/IMConnection';
+import { Adapters, IHTTPRequest, IHTTPResponse } from './Adapters';
 
 export const KEY_CURRENT_USER = 'CURRENT_USER';
 export const KEY_PUSH_ROUTER = 'PUSH_ROUTER';
 
 export class App {
   info: IAppInfo;
-  platform: IPlatform;
 
   private _cache = new Map<string, unknown>();
   private _sessionToken: string;
   private _useMasterKey: boolean;
-  private _connection: IMConnection;
 
   constructor(config: IAppInfo) {
     this.info = {
@@ -28,7 +19,6 @@ export class App {
       appKey: config?.appKey,
       serverURL: config?.serverURL,
     };
-    this.platform = PlatformSupport.getPlatform();
   }
 
   get initialized(): boolean {
@@ -60,20 +50,16 @@ export class App {
     this._sessionToken = sessionToken;
   }
 
-  async _request(
-    req: HTTPRequest,
-    option?: IRequestOption
+  async _uluru(
+    req: IHTTPRequest,
+    option?: IAuthOption
   ): Promise<IHTTPResponse> {
-    log('LC:Request:send', '%O', req);
-    const res = await this.platform.request(req, option);
-    log('LC:Request:recv', '%O', res);
-    return res;
-  }
+    const { userAgent = 'unknown' } = Adapters.get().platformInfo;
 
-  async _uluru(req: HTTPRequest, option?: IAuthOption): Promise<IHTTPResponse> {
     req.baseURL = this.info.serverURL;
+    if (!req.header) req.header = {};
     req.header['Content-Type'] = 'application/json';
-    req.header['X-LC-UA'] = this.platform.userAgent || 'unknown';
+    req.header['X-LC-UA'] = userAgent;
     req.header['X-LC-Id'] = this.info.appId;
 
     let useMasterKey: boolean;
@@ -84,7 +70,7 @@ export class App {
     }
     if (useMasterKey) {
       if (!this.info.masterKey) {
-        fail('The masterKey is not provided');
+        throw new Error('The masterKey is not defined');
       }
       req.header['X-LC-Key'] = this.info.masterKey + ',master';
     } else {
@@ -96,10 +82,7 @@ export class App {
       req.header['X-LC-Session'] = sessionToken;
     }
 
-    const res = await this._request(req, option);
-    if (typeof res.body === 'string') {
-      res.body = JSON.parse(res.body);
-    }
+    const res = await Adapters.request(req, option);
     if (!/^2/.test(res.status.toString())) {
       const err = res.body as { code: number; error: string };
       throw new UluruError(err.code, err.error);
@@ -107,35 +90,23 @@ export class App {
     return res;
   }
 
-  _upload(
-    req: IUploadRequest,
-    option?: IRequestOption
-  ): Promise<IHTTPResponse> {
-    log('LC:Upload', '%O', req);
-    return this.platform.upload(req, option);
-  }
-
-  _getConnection(): IMConnection {
-    if (!this._connection) {
-      this._connection = new IMConnection(this);
-    }
-    return this._connection;
-  }
-
   _kvSet(key: string, value: string): void {
+    key = this.info.appId + ':' + key;
     log('LC:KV:set', '%s = %O', key, value);
-    this.platform.storage.set(this.info.appId + ':' + key, value);
+    Adapters.get().storage.setItem(key, value);
   }
 
   _kvGet(key: string): string {
-    const value = this.platform.storage.get(this.info.appId + ':' + key);
+    key = this.info.appId + ':' + key;
+    const value = Adapters.get().storage.getItem(key) as string;
     log('LC:KV:get', '%s = %O', key, value);
     return value;
   }
 
   _kvRemove(key: string): void {
     log('LC:KV:rm', key);
-    this.platform.storage.remove(this.info.appId + ':' + key);
+    key = this.info.appId + ':' + key;
+    Adapters.get().storage.removeItem(key);
   }
 
   _cacheSet(key: string, value: unknown): void {

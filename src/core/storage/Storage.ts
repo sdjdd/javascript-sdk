@@ -49,19 +49,21 @@ export class Storage {
   }
 
   async upload(file: IFile, option?: IUploadOption): Promise<IObject> {
-    const req = new HTTPRequest({
-      method: 'POST',
-      path: APIPath.fileTokens,
-      body: {
-        key: file.key,
-        name: file.name,
-        ACL: file.ACL,
-        mime_type: file.mime,
-        keep_file_name: option?.keepFileName || false,
-        metaData: file.metaData,
+    const res = await this.app._uluru(
+      {
+        method: 'POST',
+        path: APIPath.fileTokens,
+        body: {
+          key: file.key,
+          name: file.name,
+          ACL: file.ACL,
+          mime_type: file.mime,
+          keep_file_name: option?.keepFileName || false,
+          metaData: file.metaData,
+        },
       },
-    });
-    const res = await this.app._uluru(req, option);
+      option
+    );
     const tokens = res.body as IFileTokens;
 
     const provider = this.getFileProvider(tokens.provider);
@@ -82,12 +84,10 @@ export class Storage {
   }
 
   _invokeFileCallback(token: string, success = true): Promise<IHTTPResponse> {
-    return this.app._uluru(
-      new HTTPRequest({
-        method: 'POST',
-        path: APIPath.fileCallback,
-        body: { token, result: success },
-      })
-    );
+    return this.app._uluru({
+      method: 'POST',
+      path: APIPath.fileCallback,
+      body: { token, result: success },
+    });
   }
 }

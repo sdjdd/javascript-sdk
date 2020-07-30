@@ -1,6 +1,5 @@
 import { App, KEY_PUSH_ROUTER } from '../App';
 import { IPushRouterData } from '../types';
-import { HTTPRequest } from '../utils';
 
 export class PushRouter {
   static async get(app: App, useCache = true): Promise<IPushRouterData> {
@@ -11,7 +10,7 @@ export class PushRouter {
       }
     }
 
-    const req = new HTTPRequest({
+    const res = await app._uluru({
       method: 'GET',
       path: '/v1/route',
       query: {
@@ -19,7 +18,6 @@ export class PushRouter {
         secure: 'true',
       },
     });
-    const res = await app._uluru(req);
 
     const router = res.body as IPushRouterData;
     router.expireAt = Date.now() + router.ttl * 1000;

@@ -1,4 +1,5 @@
-import { IHTTPResponse, IRequestOption, IHTTPRequest } from '../adapters';
+import { RequestOptions } from '@leancloud/adapter-types';
+import { IHTTPRequest, IRequestOption, IHTTPResponse } from './Adapters';
 
 export interface IAppInfo {
   appId: string;
@@ -7,7 +8,8 @@ export interface IAppInfo {
   masterKey?: string;
 }
 
-export interface IAuthOption extends IRequestOption {
+export interface IAuthOption
+  extends Pick<RequestOptions, 'signal' | 'onprogress'> {
   sessionToken?: string;
   useMasterKey?: boolean;
 }
@@ -54,14 +56,10 @@ export interface IObjectGetOption extends IAuthOption {
   include?: string[];
 }
 
-export interface IHTTPRequestWithPath extends IHTTPRequest {
-  path?: string;
-}
-
 export interface IObjectOperateTask {
-  request: IHTTPRequestWithPath;
+  request: IHTTPRequest;
   responseBody: unknown;
-  makeRequest(): IHTTPRequestWithPath;
+  makeRequest(): IHTTPRequest;
   sendRequest(): Promise<unknown>;
   encodeResponse(): IObject;
   do(): Promise<IObject>;
@@ -124,7 +122,7 @@ export interface IFile {
   ACL?: IACL;
   key: string;
   name: string;
-  data: ArrayBuffer;
+  data: ArrayBuffer | Buffer | Blob;
   mime?: string;
   metaData?: Record<string, unknown>;
 }

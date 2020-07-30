@@ -1,9 +1,9 @@
 import { App } from '../App';
-import { isRegExp, HTTPRequest } from '../utils';
+import { isRegExp } from '../utils';
 import { IObject, IQuery, IObjectDataRaw, IQueryFindOption } from '../types';
 import { ObjectDecoder } from './ObjectEncoding';
 import { APIPath } from '../APIPath';
-import { LiveQuery } from './LiveQuery';
+import { IHTTPRequest } from '../Adapters';
 
 export type Condition =
   | '=='
@@ -292,17 +292,18 @@ export class Query implements IQuery {
     return JSON.stringify(this);
   }
 
-  _makeRequest(option?: IQueryFindOption): HTTPRequest {
-    const req = new HTTPRequest({ path: APIPath.class(this.className) });
+  _makeRequest(option?: IQueryFindOption): IHTTPRequest {
+    const req: IHTTPRequest = {
+      path: APIPath.class(this.className),
+      query: {
+        limit: this._limit?.toString(),
+        skip: this._skip?.toString(),
+        include: option?.include?.join(','),
+      },
+    };
     const where = this.toString();
     if (where !== '{}') {
       req.query.where = where;
-    }
-    if (this._limit !== undefined) {
-      req.query.limit = this._limit.toString();
-    }
-    if (this._skip !== undefined) {
-      req.query.skip = this._skip.toString();
     }
     if (this._orderBy.length > 0) {
       req.query.order = this._orderBy
@@ -311,9 +312,6 @@ export class Query implements IQuery {
     }
     if (this._select.size > 0) {
       req.query.keys = Array.from(this._select).join(',');
-    }
-    if (option?.include) {
-      req.query.include = option.include.join(',');
     }
     return req;
   }
@@ -338,7 +336,7 @@ export class Query implements IQuery {
     return results[0];
   }
 
-  subscribe(): LiveQuery {
-    return new LiveQuery(this);
-  }
+  // subscribe(): LiveQuery {
+  //   return new LiveQuery(this);
+  // }
 }

@@ -7,7 +7,6 @@ import {
   ObjectDeleteTask,
 } from './Object';
 import { IObjectData, IObjectOperateTask } from '../types';
-import { HTTPRequest } from '../utils';
 import { Class } from './Class';
 import { UluruError } from '../errors';
 import { APIPath } from '../APIPath';
@@ -65,13 +64,11 @@ export class Batch {
         body: task.request.body,
       });
     });
-    const res = await this.app._uluru(
-      new HTTPRequest({
-        method: 'POST',
-        path: APIPath.batch,
-        body: { requests },
-      })
-    );
+    const res = await this.app._uluru({
+      method: 'POST',
+      path: APIPath.batch,
+      body: { requests },
+    });
 
     const results = res.body as {
       error?: { code: number; error: string };

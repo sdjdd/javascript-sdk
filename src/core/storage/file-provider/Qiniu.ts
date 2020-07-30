@@ -1,12 +1,11 @@
 import { App } from '../../App';
-import { IHTTPResponse } from '../../../adapters';
 import {
   IFileProvider,
   IUploadFileInfo,
   IFile,
   IUploadOption,
 } from '../../types';
-import { UploadRequest } from '../../utils';
+import { Adapters, IUploadRequest, IHTTPResponse } from '../../Adapters';
 
 export class Qiniu implements IFileProvider {
   constructor(public app: App) {}
@@ -16,23 +15,21 @@ export class Qiniu implements IFileProvider {
     info: IUploadFileInfo,
     option?: IUploadOption
   ): Promise<IHTTPResponse> {
-    const _file = {
+    const req: IUploadRequest = {
+      method: 'POST',
+      header: option.header,
+      baseURL: info.url,
+      form: {
+        key: info.key,
+        token: info.token,
+        name: file.name,
+      },
+    };
+    const fileForm = {
       field: 'file',
       name: file.name,
       data: file.data,
     };
-    const formData = {
-      key: info.key,
-      token: info.token,
-      name: file.name,
-    };
-    const req = new UploadRequest({
-      method: 'POST',
-      header: option.header,
-      baseURL: info.url,
-      file: _file,
-      formData,
-    });
-    return this.app._upload(req, option);
+    return Adapters.upload(req, fileForm, option);
   }
 }
