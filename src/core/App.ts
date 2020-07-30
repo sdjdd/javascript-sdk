@@ -1,5 +1,5 @@
 import { IAppInfo, IAuthOption } from './types';
-import { log, fail } from './utils';
+import { log } from './utils';
 import { UluruError } from './errors';
 import { Adapters, IHTTPRequest, IHTTPResponse } from './Adapters';
 
@@ -30,7 +30,7 @@ export class App {
 
   useMasterKey(enable: boolean): void {
     if (enable && !this.info.masterKey) {
-      fail('The masterKey is not provided');
+      throw new Error('The masterKey is not provided');
     }
     this._useMasterKey = enable;
   }
@@ -92,21 +92,17 @@ export class App {
 
   _kvSet(key: string, value: string): void {
     key = this.info.appId + ':' + key;
-    log('LC:KV:set', '%s = %O', key, value);
-    Adapters.get().storage.setItem(key, value);
+    Adapters.kvSet(key, value);
   }
 
   _kvGet(key: string): string {
     key = this.info.appId + ':' + key;
-    const value = Adapters.get().storage.getItem(key) as string;
-    log('LC:KV:get', '%s = %O', key, value);
-    return value;
+    return Adapters.kvGet(key);
   }
 
-  _kvRemove(key: string): void {
-    log('LC:KV:rm', key);
+  _kvRemove(key: string): void | Promise<void> {
     key = this.info.appId + ':' + key;
-    Adapters.get().storage.removeItem(key);
+    return Adapters.kvRemove(key);
   }
 
   _cacheSet(key: string, value: unknown): void {

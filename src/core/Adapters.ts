@@ -100,4 +100,48 @@ export class Adapters {
     log('LC:Upload:recv', '%O', res);
     return res;
   }
+
+  static kvSet(key: string, value: string): void {
+    const { storage } = Adapters.get();
+    if (storage.async === true) {
+      throw new Error(
+        'The adapters provides an async storage, please use async set instead'
+      );
+    }
+    log('LC:KV:set', '%s = %O', key, value);
+    storage.setItem(key, value);
+  }
+
+  static async kvSetAsync(key: string, value: string): Promise<void> {
+    log('LC:KV:set', '%s = %O', key, value);
+    await Adapters.get().storage.setItem(key, value);
+  }
+
+  static kvGet(key: string): string {
+    const { storage } = Adapters.get();
+    if (storage.async === true) {
+      throw new Error(
+        'The adapters provides an async storage, please use async get instead'
+      );
+    }
+    const value = storage.getItem(key);
+    log('LC:KV:get', '%s = %O', key, value);
+    return value;
+  }
+
+  static async kvGetAsync(key: string): Promise<string> {
+    const value = await Adapters.get().storage.getItem(key);
+    log('LC:KV:get', '%s = %O', key, value);
+    return value;
+  }
+
+  static kvRemove(key: string): void | Promise<void> {
+    log('LC:KV:rm', key);
+    return Adapters.get().storage.removeItem(key);
+  }
+
+  static kvClear(): void | Promise<void> {
+    log('LC:KV:clear', 'remove all keys');
+    return Adapters.get().storage.clear();
+  }
 }
