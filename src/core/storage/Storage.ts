@@ -9,13 +9,12 @@ import {
   IFileTokens,
   IObject,
 } from '../types';
-import { IHTTPResponse } from '../../adapters';
-import { HTTPRequest } from '../utils';
 import { LCObject } from './Object';
 import { ObjectDecoder } from './ObjectEncoding';
 import { User, UserClass } from './User';
 import { ObjectFactory } from './ObjectFactory';
 import { APIPath } from '../APIPath';
+import { IHTTPResponse } from '../Adapters';
 
 ObjectFactory.registerDefaultHandler(
   (className, objectId) => new LCObject(className, objectId)

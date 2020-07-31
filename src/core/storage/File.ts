@@ -28,10 +28,10 @@ export class File implements IFile {
     }
   }
 
-  static fromRawString(name: string, data: string): File {
-    const file = new File(name);
-    const encoder = new TextEncoder();
-    file.data = encoder.encode(data).buffer;
-    return file;
-  }
+  // static fromRawString(name: string, data: string): File {
+  //   const file = new File(name);
+  //   const encoder = new TextEncoder();
+  //   file.data = encoder.encode(data).buffer;
+  //   return file;
+  // }
 }

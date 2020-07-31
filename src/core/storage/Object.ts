@@ -1,5 +1,5 @@
 import { App } from '../App';
-import { removeReservedKeys } from '../utils';
+import { removeReservedKeys, checkObjectTag } from '../utils';
 import {
   IObject,
   IPointer,
@@ -32,7 +32,7 @@ export class ObjectCreateTask implements IObjectOperateTask {
       path: APIPath.class(this.className),
       body: ObjectEncoder.encodeData(this.data),
       query: {
-        fetchWhenSave: this.option?.fetch ? 'true' : undefined,
+        fetchWhenSave: this.option?.fetch ? 'true' : null,
       },
     };
     return this.request;
@@ -127,7 +127,7 @@ export class ObjectUpdateTask extends ObjectGetTask
       body: ObjectEncoder.encodeData(this.data),
       query: {
         include: this.option?.include?.join(','),
-        fetchWhenSave: this.option?.fetch ? 'true' : undefined,
+        fetchWhenSave: this.option?.fetch ? 'true' : null,
       },
     };
     return this.request;
@@ -186,7 +186,7 @@ export class LCObject implements IObject {
           extracted[key] = extractData(value.data);
           return;
         }
-        if (typeof value === 'object') {
+        if (Array.isArray(value) || checkObjectTag(value, 'Object')) {
           extracted[key] = extractData(value);
         } else {
           extracted[key] = value;

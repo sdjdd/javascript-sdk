@@ -1,11 +1,9 @@
 import EventEmitter from 'eventemitter3';
 import { Query } from './Query';
 import { App } from '../App';
-import { HTTPRequest } from '../utils';
 import { APIPath } from '../APIPath';
 import { LiveQueryEvent } from '../types';
 import { ObjectDecoder } from './ObjectEncoding';
-import { IMConnection } from '../realtime/IMConnection';
 
 interface ISubscribeData {
   id: string;
@@ -37,7 +35,7 @@ export class LiveQuery extends EventEmitter<LiveQueryEvent> {
   }
 
   private async _onOpen(): Promise<void> {
-    const req = new HTTPRequest({
+    const res = await this._app._uluru({
       method: 'POST',
       path: APIPath.subscribe,
       body: {
@@ -47,7 +45,6 @@ export class LiveQuery extends EventEmitter<LiveQueryEvent> {
         },
       },
     });
-    const res = await this._app._uluru(req);
     const data = res.body as ISubscribeData;
 
     const loginMessage = {

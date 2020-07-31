@@ -2,8 +2,6 @@
   "compilerOptions": {
     "lib": ["ES2020"],
     "target": "ES5",
-    "allowSyntheticDefaultImports": true, // for compile superagent by rollup ts plugin
-    "esModuleInterop": true // for import superagent directly
   },
   "include": [
     "src/**/*"

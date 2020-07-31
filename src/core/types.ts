@@ -122,7 +122,7 @@ export interface IFile {
   ACL?: IACL;
   key: string;
   name: string;
-  data: ArrayBuffer | Buffer | Blob;
+  data: unknown; // maybe: ArrayBuffer | Buffer | Blob
   mime?: string;
   metaData?: Record<string, unknown>;
 }

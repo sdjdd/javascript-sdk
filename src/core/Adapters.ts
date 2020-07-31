@@ -34,7 +34,7 @@ function parseURL(req: IHTTPRequest): string {
   let url = req.baseURL + (req.path ?? '');
   if (req.query) {
     const qstr = Object.entries(req.query)
-      .filter((kv) => kv[1] !== undefined)
+      .filter((kv) => kv[1] !== undefined && kv[1] !== null)
       .map(([k, v]) => k + '=' + encodeURIComponent(v))
       .join('&');
     const sp = url.includes('?') ? '&' : '?';
