@@ -1,4 +1,4 @@
-import 'should';
+import * as should from 'should';
 
 describe('HTTPRequest', function () {
   describe('.url', function () {

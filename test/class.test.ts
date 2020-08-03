@@ -1,11 +1,11 @@
-import 'should';
+import * as should from 'should';
 import {
-  setGlobalTestPlatform,
-  globalTestPlatform as platform,
-} from './TestPlatform';
+  globalTestAdapter as adapter,
+  setGlobalTestAdapter,
+} from '../src/TestAdapter';
 import { Class, App } from '../src/core';
 
-setGlobalTestPlatform();
+setGlobalTestAdapter();
 
 const testApp = new App({
   appId: 'test-app-id',
@@ -18,11 +18,11 @@ describe('Class', function () {
     const Test = new Class(testApp, 'Test');
 
     it('should send POST request to /classes/<className>', async function () {
-      platform.pushResponse({ status: 200, body: { objectId: 'test-id' } });
+      adapter.responses.push({ status: 200, body: { objectId: 'test-id' } });
       await Test.add({});
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.method.should.eql('POST');
-      req.path.should.eql('/1.1/classes/Test');
+      req.url.should.endWith('/classes/Test');
     });
   });
 });

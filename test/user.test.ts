@@ -1,11 +1,11 @@
-import 'should';
+import * as should from 'should';
 import {
-  setGlobalTestPlatform,
-  globalTestPlatform as platform,
-} from './TestPlatform';
+  globalTestAdapter as adapter,
+  setGlobalTestAdapter,
+} from '../src/TestAdapter';
 import { App, User, UserClass } from '../src/core';
 
-setGlobalTestPlatform();
+setGlobalTestAdapter();
 
 const testApp = new App({
   appId: 'test-app-id',
@@ -44,25 +44,26 @@ describe('User', function () {
 
     it('should send GET request to /users/me', async function () {
       await user.isAuthenticated();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.method.should.eql('GET');
-      req.path.should.eql('/1.1/users/me');
+      req.path.should.endWith('/users/me');
       req.header['X-LC-Session'].should.eql('test-session');
     });
 
     it('should return true when uluru response ok', async function () {
-      platform.pushResponse({ status: 200 });
+      adapter.responses.push({ status: 200 });
       (await user.isAuthenticated()).should.true();
     });
 
     it('should return false when uluru response error 211', async function () {
-      platform.pushResponse({ status: 400, body: { code: 211, error: '' } });
+      adapter.responses.push({ status: 400, body: { code: 211, error: '' } });
       (await user.isAuthenticated()).should.false();
     });
 
     it('should throw when catch an unknown error', function () {
-      platform.pushError(new Error('some error message'));
-      return user.isAuthenticated().should.rejected();
+      const error = new Error('some error message');
+      adapter.requestErrors.push(error);
+      return user.isAuthenticated().should.rejectedWith(error);
     });
   });
 
@@ -72,9 +73,9 @@ describe('User', function () {
 
     it('should send PUT request to /users/<user-id>/updatePassword', async function () {
       await user.updatePassword('old-password', 'new-password');
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.method.should.eql('PUT');
-      req.path.should.eql('/1.1/users/test-user-id/updatePassword');
+      req.path.should.endWith('/users/test-user-id/updatePassword');
       req.header['X-LC-Session'].should.eql('test-session');
       req.body.should.eql({
         old_password: 'old-password',
@@ -84,7 +85,7 @@ describe('User', function () {
 
     it('should update #sessionToken', async function () {
       user.data.sessionToken = 'to-be-replaced';
-      platform.pushResponse({
+      adapter.responses.push({
         status: 200,
         body: { sessionToken: 'new-session' },
       });
@@ -96,7 +97,7 @@ describe('User', function () {
       const currentUser = new User('test-current-user-id', testApp);
       currentUser.data = { sessionToken: 'test-current-session' };
       UserClass._setCurrentUser(testApp, currentUser);
-      platform.pushResponse({
+      adapter.responses.push({
         status: 200,
         body: { sessionToken: 'new-session' },
       });
@@ -110,7 +111,7 @@ describe('User', function () {
     it('should update sessionToken of App when currentUser is this', async function () {
       user.data = { sessionToken: 'test-current-session' };
       UserClass._setCurrentUser(testApp, user);
-      platform.pushResponse({
+      adapter.responses.push({
         status: 200,
         body: { sessionToken: 'new-session' },
       });
@@ -124,17 +125,20 @@ describe('User', function () {
     const user = new User('test-user-id', testApp);
 
     it('should send GET request to /users/<objectId>', async function () {
-      platform.pushResponse({ status: 200, body: { objectId: user.objectId } });
+      adapter.responses.push({
+        status: 200,
+        body: { objectId: user.objectId },
+      });
       await user.get();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.method.should.eql('GET');
-      req.path.should.eql('/1.1/users/' + user.objectId);
+      req.path.should.endWith('/users/' + user.objectId);
     });
 
     it('should update current user when this is current user', async function () {
       user.data = { key: 'old-value' };
       UserClass._setCurrentUser(testApp, user);
-      platform.pushResponse({
+      adapter.responses.push({
         status: 200,
         body: { objectId: user.objectId, key: 'new-value' },
       });

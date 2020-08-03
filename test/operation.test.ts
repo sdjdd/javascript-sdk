@@ -1,4 +1,4 @@
-import 'should';
+import * as should from 'should';
 import { Operation } from '../src/core';
 
 describe('Operation', function () {

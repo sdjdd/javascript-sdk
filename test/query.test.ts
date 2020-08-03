@@ -1,11 +1,11 @@
-import { default as should } from 'should';
+import * as should from 'should';
 import { App, Query } from '../src/core';
 import {
-  setGlobalTestPlatform,
-  globalTestPlatform as platform,
-} from './TestPlatform';
+  globalTestAdapter as adapter,
+  setGlobalTestAdapter,
+} from '../src/TestAdapter';
 
-setGlobalTestPlatform();
+setGlobalTestAdapter();
 
 const app = new App({
   appId: 'test-app-id',
@@ -81,7 +81,7 @@ describe('Query', function () {
   describe('#select', function () {
     it('should add keys to _select', async function () {
       await Test.select('key1', 'key2', 'key3').find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.keys.should.eql('key1,key2,key3');
     });
 
@@ -95,7 +95,7 @@ describe('Query', function () {
   describe('#except', function () {
     it('should add keys  with prefix "-" to _select', async function () {
       await Test.except('key1', 'key2', 'key3').find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.keys.should.eql('-key1,-key2,-key3');
     });
 
@@ -109,79 +109,79 @@ describe('Query', function () {
   describe('#where', function () {
     it('where("key", "==", "value")', async function () {
       await Test.where('key', '==', 'value').find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql('{"key":"value"}');
     });
 
     it('where("key", "!=", "value")', async function () {
       await Test.where('key', '!=', 'value').find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql('{"key":{"$ne":"value"}}');
     });
 
     it('where("key", "<", "value")', async function () {
       await Test.where('key', '<', 'value').find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql('{"key":{"$lt":"value"}}');
     });
 
     it('where("key", "<=", "value")', async function () {
       await Test.where('key', '<=', 'value').find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql('{"key":{"$lte":"value"}}');
     });
 
     it('where("key", ">", "value")', async function () {
       await Test.where('key', '>', 'value').find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql('{"key":{"$gt":"value"}}');
     });
 
     it('where("key", ">=", "value")', async function () {
       await Test.where('key', '>=', 'value').find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql('{"key":{"$gte":"value"}}');
     });
 
     it('where("key", "exists")', async function () {
       await Test.where('key', 'exists').find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql('{"key":{"$exists":true}}');
     });
 
     it('where("key", "not-exists")', async function () {
       await Test.where('key', 'not-exists').find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql('{"key":{"$exists":false}}');
     });
 
     it('where("key", "has", "value")', async function () {
       await Test.where('key', 'has', 'value').find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql('{"key":"value"}');
     });
 
     it('where("key", "has", ["value1", "value2"])', async function () {
       await Test.where('key', 'has', ['value1', 'value2']).find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql('{"key":{"$all":["value1","value2"]}}');
     });
 
     it('where("key", "has-any", "value")', async function () {
       await Test.where('key', 'has-any', 'value').find();
-      const req = platform.popRequest();
-      req.query.where.should.eql('{"key":"value"}');
+      const req = adapter.requests.pop();
+      req.url.should.endWith('?where=' + encodeURIComponent('{"key":"value"}'));
     });
 
     it('where("key", "has-any", ["value1", "value2"])', async function () {
       await Test.where('key', 'has-any', ['value1', 'value2']).find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql('{"key":{"$in":["value1","value2"]}}');
     });
 
     it('where("key", "size-is", 5)', async function () {
       await Test.where('key', 'size-is', 5).find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql('{"key":{"$size":5}}');
     });
 
@@ -209,7 +209,7 @@ describe('Query', function () {
         'in',
         Country.select('name').where('language', '==', 'English')
       ).find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql(
         JSON.stringify({
           nationality: {
@@ -230,7 +230,7 @@ describe('Query', function () {
         'in',
         Post.where('objectId', '==', 'test-id')
       ).find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql(
         JSON.stringify({
           post: {
@@ -247,7 +247,7 @@ describe('Query', function () {
       await Test.where('key1', '==', 'value')
         .where('key2', '==', 'value')
         .find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql('{"key1":"value","key2":"value"}');
     });
 
@@ -255,7 +255,7 @@ describe('Query', function () {
       await Test.where('key1', '>', 'value1')
         .where('key1', '<', 'value2')
         .find();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.where.should.eql(
         JSON.stringify({
           $and: [{ key1: { $gt: 'value1' } }, { key1: { $lt: 'value2' } }],
@@ -279,12 +279,12 @@ describe('Query', function () {
   describe('#count', function () {
     it('should set count to 1 and limit to 0', async function () {
       await Test.count();
-      const req = platform.popRequest();
+      const req = adapter.requests.pop();
       req.query.should.eql({ count: '1', limit: '0' });
     });
 
     it('should return count of results', async function () {
-      platform.pushResponse({ status: 200, body: { count: 10 } });
+      adapter.responses.push({ status: 200, body: { count: 10 } });
       const count = await Test.count();
       count.should.eql(10);
     });

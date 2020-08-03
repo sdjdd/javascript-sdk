@@ -5,7 +5,11 @@ import {
   FormDataPart,
   Response,
 } from '@leancloud/adapter-types';
-import { log } from './utils';
+import { log, URLUtils } from './utils';
+
+const asyncOnlyError = new Error(
+  'The adapters provides an async storage, please use async method instead'
+);
 
 export interface IHTTPRequest {
   baseURL?: string;
@@ -32,13 +36,9 @@ function parseURL(req: IHTTPRequest): string {
     throw new Error('The baseURL is empty');
   }
   let url = req.baseURL + (req.path ?? '');
-  if (req.query) {
-    const qstr = Object.entries(req.query)
-      .filter((kv) => kv[1] !== undefined && kv[1] !== null)
-      .map(([k, v]) => k + '=' + encodeURIComponent(v))
-      .join('&');
-    const sp = url.includes('?') ? '&' : '?';
-    url += sp + qstr;
+  const queryStr = URLUtils.encodeQuery(req.query);
+  if (queryStr) {
+    url += '?' + queryStr;
   }
   return url;
 }
@@ -104,9 +104,7 @@ export class Adapters {
   static kvSet(key: string, value: string): void {
     const { storage } = Adapters.get();
     if (storage.async === true) {
-      throw new Error(
-        'The adapters provides an async storage, please use async set instead'
-      );
+      throw asyncOnlyError;
     }
     log('LC:KV:set', '%s = %O', key, value);
     storage.setItem(key, value);
@@ -120,9 +118,7 @@ export class Adapters {
   static kvGet(key: string): string {
     const { storage } = Adapters.get();
     if (storage.async === true) {
-      throw new Error(
-        'The adapters provides an async storage, please use async get instead'
-      );
+      throw asyncOnlyError;
     }
     const value = storage.getItem(key);
     log('LC:KV:get', '%s = %O', key, value);

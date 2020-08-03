@@ -7,14 +7,13 @@ import {
   IObjectGetOption,
   IObjectDataRaw,
   IObjectUpdateOption,
-  IOperation,
   IUserLoginWithAuthDataOption,
   IUserLoginWithAuthDataAndUnionIdOption,
   IAuthDataWithCaptchaToken,
 } from '../types';
 import { App, KEY_CURRENT_USER } from '../App';
 import { Class } from './Class';
-import { deleteKey, assert } from '../utils';
+import { ObjectUtils, assert } from '../utils';
 import { UluruError } from '../errors';
 import { ObjectEncoder, ObjectDecoder } from './ObjectEncoding';
 import { APIPath } from '../APIPath';
@@ -392,9 +391,8 @@ export class User extends LCObject implements IUser {
 
       const userKV = JSON.parse(this.app._kvGet(KEY_CURRENT_USER));
       Object.entries(data).forEach(([key, value]) => {
-        const op = value as IOperation;
-        if (op?.__op === 'Delete') {
-          deleteKey(userKV, key);
+        if (value?.__op === 'Delete') {
+          ObjectUtils.deleteKey(userKV, key);
         }
       });
       Object.assign(userKV, task.responseBody);

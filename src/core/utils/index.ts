@@ -1,4 +1,6 @@
 export * from './log';
+export * from './URLUtils';
+export * from './ObjectUtils';
 
 const RESERVED_KEYS = new Set(['objectId', 'createdAt', 'updatedAt']);
 
@@ -30,14 +32,4 @@ export function removeReservedKeys(obj: Record<string, unknown>): void {
       delete obj[key];
     }
   });
-}
-
-export function deleteKey(obj: unknown, key: string): void {
-  if (!obj) return;
-  if (key.includes('.')) {
-    const keys = key.split('.');
-    deleteKey(obj[keys[0]], keys.slice(1).join('.'));
-  } else {
-    delete obj[key];
-  }
 }

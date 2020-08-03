@@ -1,4 +1,4 @@
-import 'should';
+import * as should from 'should';
 import {
   ObjectEncoder,
   ObjectDecoder,

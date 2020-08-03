@@ -32,7 +32,7 @@ export interface IObjectAddOption extends IAuthOption {
   fetch?: boolean;
 }
 
-export interface IObjectData extends Record<string, unknown> {
+export interface IObjectData extends Record<string, any> {
   className?: string; // pointer only
   objectId?: string;
   createdAt?: Date;

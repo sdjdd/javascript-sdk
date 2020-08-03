@@ -1,8 +1,8 @@
-import 'should';
+import * as should from 'should';
 import { App } from '../src/core';
-import { setGlobalTestPlatform } from './TestPlatform';
+import { setGlobalTestAdapter } from '../src/TestAdapter';
 
-setGlobalTestPlatform();
+setGlobalTestAdapter();
 
 describe('App', function () {
   describe('#constructor', function () {
