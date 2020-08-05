@@ -1,25 +1,12 @@
 import * as env from '../../env';
-import { App, Storage, debug, Adapters } from '../../src/core';
+import { App, Storage, debug, Adapters } from '../../src';
 import * as adapters from '@leancloud/platform-adapters-node';
 
 export { env };
-export {
-  App,
-  Storage,
-  ACL,
-  Operation,
-  Query,
-  LCObject,
-  File,
-  subscribe,
-  pause,
-  resume,
-} from '../../src/core';
+export { App, Storage, ACL, Operation, Query, LCObject, File } from '../../src';
+export { subscribe, pause, resume } from '../../src/storage/LiveQuery';
 
-export {
-  ObjectDecoder,
-  ObjectEncoder,
-} from '../../src/core/storage/ObjectEncoding';
+export { ObjectDecoder, ObjectEncoder } from '../../src/storage/ObjectEncoding';
 
 debug.enable('LC*');
 

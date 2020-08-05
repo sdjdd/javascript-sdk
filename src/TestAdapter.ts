@@ -11,8 +11,8 @@ import {
 } from '@leancloud/adapter-types';
 
 import { EventEmitter } from 'eventemitter3';
-import { Adapters } from './core';
-import { URLUtils, IURLComponents } from './core/utils';
+import { Adapters } from './Adapters';
+import { URLUtils, IURLComponents } from './utils';
 
 export interface ITestRequest {
   url: string;
@@ -82,6 +82,18 @@ class TestStorage implements SyncStorage {
 }
 
 class TestWebsocket extends EventEmitter implements WebSocket {
+  static sockets: TestWebsocket[] = [];
+
+  private static _nextId = 1;
+
+  id: number;
+
+  constructor(public url: string, public protocols?: string | string[]) {
+    super();
+    this.id = TestWebsocket._nextId++;
+    TestWebsocket.sockets.push(this);
+  }
+
   addEventListener(event: string, handler: (...args: any[]) => any): void {
     this.on(event, handler);
   }

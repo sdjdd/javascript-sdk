@@ -1,7 +1,7 @@
 {
   "name": "leancloud-storage",
   "version": "5.0.0",
-  "main": "./dist/node/entry/index.js",
+  "main": "./dist/storage.js",
   "description": "LeanCloud JavaScript SDK.",
   "repository": {
     "type": "git",
@@ -10,9 +10,10 @@
   "scripts": {
     "clean": "rm -rf ./dist",
     "build": "npm run clean && npm run compile",
-    "compile": "npm run compile:core && npm run compile:browser",
-    "compile:core": "rollup -c rollup/core.config.js",
+    "compile": "npm run compile:storage && npm run compile:browser",
+    "compile:storage": "rollup -c rollup/storage.config.js",
     "compile:browser": "rollup -c rollup/browser.config.js",
+    "compile:live-query": "rollup -c rollup/live-query.config.js",
     "doc": "typedoc --out docs src",
     "test": "mocha",
     "coverage": "nyc npm run test",
