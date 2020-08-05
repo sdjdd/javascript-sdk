@@ -53,12 +53,21 @@ function parseResponse(res: Response): IHTTPResponse {
 
 export class Adapters {
   private static _adapters: IAdapters;
+  private static _onSetHandlers: ((adapters: IAdapters) => void)[] = [];
+
+  static onSet(handler: (adapters: IAdapters) => void): void {
+    Adapters._onSetHandlers.push(handler);
+    if (Adapters._adapters) {
+      handler(Adapters._adapters);
+    }
+  }
 
   static set(adapters: Partial<IAdapters>): void {
     if (Adapters._adapters) {
       throw new Error('Adapters already defined');
     }
     Adapters._adapters = adapters as IAdapters;
+    Adapters._onSetHandlers.forEach((h) => h(Adapters._adapters));
   }
 
   static get(): IAdapters {

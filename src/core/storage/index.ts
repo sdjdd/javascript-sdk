@@ -8,5 +8,6 @@ export * from './Storage';
 export * from './Operation';
 export * from './User';
 export * from './File';
+export * from './LiveQuery';
 
 export { debug };

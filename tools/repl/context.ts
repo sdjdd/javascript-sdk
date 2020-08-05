@@ -11,6 +11,7 @@ export {
   Query,
   LCObject,
   File,
+  LiveQuery,
 } from '../../src/core';
 
 export {

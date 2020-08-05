@@ -9,7 +9,7 @@ export const KEY_PUSH_ROUTER = 'PUSH_ROUTER';
 export class App {
   info: IAppInfo;
 
-  private _cache = new Map<string, unknown>();
+  private _cache = new Map<string | symbol, unknown>();
   private _sessionToken: string;
   private _useMasterKey: boolean;
 
@@ -105,18 +105,18 @@ export class App {
     return Adapters.kvRemove(key);
   }
 
-  _cacheSet(key: string, value: unknown): void {
+  _cacheSet(key: string | symbol, value: unknown): void {
     log('LC:Cache:set', '%s = %o', key, value);
     this._cache.set(key, value);
   }
 
-  _cacheGet(key: string): unknown {
+  _cacheGet(key: string | symbol): unknown {
     const value = this._cache.get(key);
     log('LC:Cache:get', '%s = %o', key, value);
     return value;
   }
 
-  _cacheRemove(key: string): void {
+  _cacheRemove(key: string | symbol): void {
     log('LC:Cache:rm', key);
     this._cache.delete(key);
   }
