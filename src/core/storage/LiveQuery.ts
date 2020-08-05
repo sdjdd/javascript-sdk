@@ -63,19 +63,7 @@ export class LiveQuery extends EventEmitter<LiveQueryEvent> {
     this._query = query;
   }
 
-  static subscribe(query: Query): Promise<LiveQuery> {
-    return new LiveQuery(query).subscribe();
-  }
-
-  static pause(app: App): void {
-    RealtimeManager.pause(app);
-  }
-
-  static resume(app: App): void {
-    RealtimeManager.resume(app);
-  }
-
-  async subscribe(): Promise<this> {
+  async _subscribe(): Promise<this> {
     this._subscribeRequest = {
       method: 'POST',
       path: APIPath.subscribe,
@@ -125,4 +113,16 @@ export class LiveQuery extends EventEmitter<LiveQueryEvent> {
       body: { id: this._id, query_id: this._queryId },
     });
   }
+}
+
+export function subscribe(query: Query): Promise<LiveQuery> {
+  return new LiveQuery(query)._subscribe();
+}
+
+export function pause(app: App): void {
+  RealtimeManager.pause(app);
+}
+
+export function resume(app: App): void {
+  RealtimeManager.resume(app);
 }

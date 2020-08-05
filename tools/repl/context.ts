@@ -11,7 +11,9 @@ export {
   Query,
   LCObject,
   File,
-  LiveQuery,
+  subscribe,
+  pause,
+  resume,
 } from '../../src/core';
 
 export {
