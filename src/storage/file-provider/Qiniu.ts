@@ -1,4 +1,3 @@
-import { App } from '../../App';
 import {
   IFileProvider,
   IUploadFileInfo,
@@ -8,8 +7,6 @@ import {
 import { Adapters, IUploadRequest, IHTTPResponse } from '../../Adapters';
 
 export class Qiniu implements IFileProvider {
-  constructor(public app: App) {}
-
   upload(
     file: IFile,
     info: IUploadFileInfo,

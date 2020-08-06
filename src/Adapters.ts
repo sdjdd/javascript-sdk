@@ -110,7 +110,10 @@ export class Adapters {
     return res;
   }
 
-  static kvSet(key: string, value: string): void {
+  static kvSet(key: string, value: string, namespace?: string): void {
+    if (namespace) {
+      key = namespace + ':' + key;
+    }
     const { storage } = Adapters.get();
     if (storage.async === true) {
       throw asyncOnlyError;
@@ -124,7 +127,10 @@ export class Adapters {
     await Adapters.get().storage.setItem(key, value);
   }
 
-  static kvGet(key: string): string {
+  static kvGet(key: string, namespace?: string): string {
+    if (namespace) {
+      key = namespace + ':' + key;
+    }
     const { storage } = Adapters.get();
     if (storage.async === true) {
       throw asyncOnlyError;
@@ -140,7 +146,10 @@ export class Adapters {
     return value;
   }
 
-  static kvRemove(key: string): void | Promise<void> {
+  static kvRemove(key: string, namespace?: string): void | Promise<void> {
+    if (namespace) {
+      key = namespace + ':' + key;
+    }
     log('LC:KV:rm', key);
     return Adapters.get().storage.removeItem(key);
   }

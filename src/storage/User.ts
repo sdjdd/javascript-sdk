@@ -10,41 +10,50 @@ import {
   IUserLoginWithAuthDataOption,
   IUserLoginWithAuthDataAndUnionIdOption,
   IAuthDataWithCaptchaToken,
+  IApp,
 } from '../types';
-import { App, KEY_CURRENT_USER } from '../App';
+import { KEY_CURRENT_USER, KEY_SESSION_TOKEN } from '../Cache';
 import { Class } from './Class';
 import { ObjectUtils, assert } from '../utils';
 import { UluruError } from '../errors';
 import { ObjectEncoder, ObjectDecoder } from './ObjectEncoding';
 import { APIPath } from '../APIPath';
+import { Cache } from '../Cache';
+import { Adapters } from '../Adapters';
+import { send } from '../http';
+import { PATH_ME } from '../api-path';
 
 export class UserClass extends Class {
-  constructor(app: App) {
+  constructor(app: IApp) {
     super(app, '_User');
   }
 
-  static _setCurrentUser(app: App, user: User): void {
-    app._kvSet(KEY_CURRENT_USER, JSON.stringify(ObjectEncoder.encode(user)));
-    app._cacheSet(KEY_CURRENT_USER, user);
-    app.setSessionToken(user.sessionToken);
+  static _setCurrentUser(app: IApp, user: User): void {
+    Adapters.kvSet(
+      KEY_CURRENT_USER,
+      JSON.stringify(ObjectEncoder.encode(user)),
+      app.appId
+    );
+    Cache.set(app, KEY_CURRENT_USER, user);
+    Cache.set(app, KEY_SESSION_TOKEN, user.sessionToken, true);
   }
 
-  static _getCurrentUser(app: App): IUser {
-    let user = app._cacheGet(KEY_CURRENT_USER) as IUser;
+  static _getCurrentUser(app: IApp): IUser {
+    let user = Cache.get(app, KEY_CURRENT_USER) as IUser;
     if (!user) {
-      const userStr = app._kvGet(KEY_CURRENT_USER);
+      const userStr = Adapters.kvGet(KEY_CURRENT_USER, app.appId);
       if (userStr) {
         user = ObjectDecoder.decode(JSON.parse(userStr)).setApp(app);
-        app._cacheSet(KEY_CURRENT_USER, user);
+        Cache.set(app, KEY_CURRENT_USER, user);
       }
     }
     return user || null;
   }
 
-  static logOut(app: App): void {
-    app.setSessionToken(null);
-    app._cacheRemove(KEY_CURRENT_USER);
-    app._kvRemove(KEY_CURRENT_USER);
+  static logOut(app: IApp): void {
+    Cache.delete(app, KEY_SESSION_TOKEN);
+    Cache.delete(app, KEY_CURRENT_USER);
+    Adapters.kvRemove(KEY_CURRENT_USER, app.appId);
   }
 
   object(id: string): User {
@@ -56,7 +65,7 @@ export class UserClass extends Class {
   }
 
   async become(sessionToken: string): Promise<User> {
-    const res = await this.app._uluru({ path: APIPath.me }, { sessionToken });
+    const res = await send({ path: PATH_ME }).to(this.app, { sessionToken });
     const data = res.body as IObjectDataRaw;
     const user = ObjectDecoder.decode(data, this.className) as User;
     user.setApp(this.app);
@@ -67,14 +76,14 @@ export class UserClass extends Class {
   async signUp(data: IUserData, option?: IAuthOption): Promise<User> {
     assert(data.username, 'The username must be provided');
     assert(data.password, 'The password must be provided');
-    const res = await this.app._uluru(
+    const res = await send(
       {
         method: 'POST',
         path: APIPath.class(this.className),
         body: data,
       },
       option
-    );
+    ).to(this.app, option);
     const _data = res.body as IObjectDataRaw;
     const user = ObjectDecoder.decode(_data, this.className) as User;
     user.setApp(this.app);
@@ -93,11 +102,11 @@ export class UserClass extends Class {
   }
 
   private async _logInWithData(data: IUserData): Promise<User> {
-    const res = await this.app._uluru({
+    const res = await send({
       method: 'POST',
       path: APIPath.login,
       body: data,
-    });
+    }).to(this.app);
     const _data = res.body as IObjectDataRaw;
     const user = ObjectDecoder.decode(_data, this.className) as User;
     user.setApp(this.app);
@@ -136,7 +145,7 @@ export class UserClass extends Class {
     authData: Record<string, unknown>,
     option?: IUserLoginWithAuthDataOption
   ): Promise<User> {
-    const res = await this.app._uluru({
+    const res = await send({
       method: 'POST',
       path: APIPath.class(this.className),
       body: {
@@ -145,7 +154,7 @@ export class UserClass extends Class {
       query: {
         failOnNotExist: option?.failOnNotExist ? 'true' : undefined,
       },
-    });
+    }).to(this.app);
     const data = res.body as IObjectDataRaw;
     const user = ObjectDecoder.decode(data, this.className) as User;
     user.setApp(this.app);
@@ -173,11 +182,11 @@ export class UserClass extends Class {
   }
 
   async requestEmailVerify(email: string): Promise<void> {
-    await this.app._uluru({
+    send({
       method: 'POST',
       path: APIPath.requestEmailVerify,
       body: { email },
-    });
+    }).to(this.app);
   }
 
   async requestLoginSmsCode(
@@ -188,14 +197,14 @@ export class UserClass extends Class {
     if (option?.validateToken) {
       body.validate_token = option.validateToken;
     }
-    await this.app._uluru(
+    await send(
       {
         method: 'POST',
         path: APIPath.requestLoginSmsCode,
         body,
       },
       option
-    );
+    ).to(this.app, option);
   }
 
   async requestMobilePhoneVerify(
@@ -206,22 +215,22 @@ export class UserClass extends Class {
     if (option?.validateToken) {
       body.validate_token = option.validateToken;
     }
-    await this.app._uluru(
+    await send(
       {
         method: 'POST',
         path: APIPath.requestMobilePhoneVerify,
         body,
       },
       option
-    );
+    ).to(this.app, option);
   }
 
   async requestPasswordReset(email: string): Promise<void> {
-    await this.app._uluru({
+    await send({
       method: 'POST',
       path: APIPath.requestPasswordReset,
       body: { email },
-    });
+    }).to(this.app);
   }
 
   async requestPasswordResetBySmsCode(
@@ -232,29 +241,29 @@ export class UserClass extends Class {
     if (option?.validateToken) {
       body.validate_token = option.validateToken;
     }
-    await this.app._uluru(
+    await send(
       {
         method: 'POST',
         path: APIPath.requestPasswordResetBySmsCode,
         body,
       },
       option
-    );
+    ).to(this.app, option);
   }
 
   async resetPasswordBySmsCode(code: string, password: string): Promise<void> {
-    await this.app._uluru({
+    await send({
       method: 'PUT',
       path: APIPath.resetPasswordBySmsCode(code),
       body: { password },
-    });
+    }).to(this.app);
   }
 
   async verifyMobilePhone(code: string): Promise<void> {
-    await this.app._uluru({
+    await send({
       method: 'POST',
       path: APIPath.verifyMobilePhone(code),
-    });
+    }).to(this.app);
   }
 
   async requestChangePhoneNumber(
@@ -266,14 +275,14 @@ export class UserClass extends Class {
     if (ttl) {
       body.ttl = ttl;
     }
-    await this.app._uluru(
+    await send(
       {
         method: 'POST',
         path: APIPath.requestChangePhoneNumber,
         body,
       },
       option
-    );
+    ).to(this.app, option);
   }
 
   async changePhoneNumber(
@@ -281,21 +290,21 @@ export class UserClass extends Class {
     code: string,
     option?: IAuthOption
   ): Promise<void> {
-    await this.app._uluru(
+    await send(
       {
         method: 'POST',
         path: APIPath.changePhoneNumber,
         body: { mobilePhoneNumber, code },
       },
       option
-    );
+    ).to(this.app, option);
   }
 }
 
 export class User extends LCObject implements IUser {
   data?: IUserData;
 
-  constructor(objectId: string, app?: App) {
+  constructor(objectId: string, app?: IApp) {
     super('_User', objectId, app);
   }
 
@@ -321,10 +330,9 @@ export class User extends LCObject implements IUser {
 
   async isAuthenticated(): Promise<boolean> {
     try {
-      await this.app._uluru(
-        { path: APIPath.me },
-        { sessionToken: this.sessionToken }
-      );
+      await send({ path: PATH_ME }).to(this.app, {
+        sessionToken: this.sessionToken,
+      });
       return true;
     } catch (err) {
       if ((err as UluruError).code !== 211) {
@@ -343,28 +351,27 @@ export class User extends LCObject implements IUser {
       throw new Error('The user is not logged in');
     }
 
-    const res = await this.app._uluru(
-      {
-        method: 'PUT',
-        path: APIPath.updatePassword(this.objectId),
-        body: { old_password: oldPassword, new_password: newPassword },
-      },
-      {
-        sessionToken: this.sessionToken,
-        ...option,
-      }
-    );
+    const res = await send({
+      method: 'PUT',
+      path: APIPath.updatePassword(this.objectId),
+      body: { old_password: oldPassword, new_password: newPassword },
+    }).to(this.app, {
+      sessionToken: this.sessionToken,
+      ...option,
+    });
 
     const data = res.body as IUserData;
     this.data.sessionToken = data.sessionToken;
 
     if (this.isCurrentUser()) {
-      this.app.setSessionToken(null);
-      this.app._cacheRemove(KEY_CURRENT_USER);
+      Cache.delete(this.app, KEY_SESSION_TOKEN);
+      Cache.delete(this.app, KEY_CURRENT_USER);
 
-      const userKV = JSON.parse(this.app._kvGet(KEY_CURRENT_USER));
+      const userKV = JSON.parse(
+        Adapters.kvGet(KEY_CURRENT_USER, this.app.appId)
+      );
       userKV.sessionToken = this.sessionToken;
-      this.app._kvSet(KEY_CURRENT_USER, JSON.stringify(userKV));
+      Adapters.kvSet(KEY_CURRENT_USER, JSON.stringify(userKV), this.app.appId);
     }
   }
 
@@ -373,11 +380,13 @@ export class User extends LCObject implements IUser {
     const user = (await task.do()) as User;
 
     if (user.isCurrentUser()) {
-      this.app._cacheRemove(KEY_CURRENT_USER);
+      Cache.delete(this.app, KEY_CURRENT_USER);
 
-      const userKV = JSON.parse(this.app._kvGet(KEY_CURRENT_USER));
+      const userKV = JSON.parse(
+        Adapters.kvGet(KEY_CURRENT_USER, this.app.appId)
+      );
       Object.assign(userKV, task.responseBody);
-      this.app._kvSet(KEY_CURRENT_USER, JSON.stringify(userKV));
+      Adapters.kvSet(KEY_CURRENT_USER, JSON.stringify(userKV), this.app.appId);
     }
     return user;
   }
@@ -387,16 +396,18 @@ export class User extends LCObject implements IUser {
     const user = (await task.do()) as User;
 
     if (this.isCurrentUser()) {
-      this.app._cacheRemove(KEY_CURRENT_USER);
+      Cache.delete(this.app, KEY_CURRENT_USER);
 
-      const userKV = JSON.parse(this.app._kvGet(KEY_CURRENT_USER));
+      const userKV = JSON.parse(
+        Adapters.kvGet(KEY_CURRENT_USER, this.app.appId)
+      );
       Object.entries(data).forEach(([key, value]) => {
         if (value?.__op === 'Delete') {
           ObjectUtils.deleteKey(userKV, key);
         }
       });
       Object.assign(userKV, task.responseBody);
-      this.app._kvSet(KEY_CURRENT_USER, JSON.stringify(userKV));
+      Adapters.kvSet(KEY_CURRENT_USER, JSON.stringify(userKV), this.app.appId);
     }
     return user;
   }

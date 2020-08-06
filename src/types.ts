@@ -8,6 +8,14 @@ export interface IAppInfo {
   masterKey?: string;
 }
 
+export interface IApp {
+  appId: string;
+  appKey: string;
+  serverURL: string;
+  masterKey?: string;
+  useMasterKey?: boolean;
+}
+
 export interface IAuthOption
   extends Pick<RequestOptions, 'signal' | 'onprogress'> {
   sessionToken?: string;
@@ -19,6 +27,9 @@ export interface IQueryFindOption {
 }
 
 export interface IQuery {
+  app: IApp;
+  className: string;
+  toString(): string;
   _parseWhere(): unknown;
 }
 
@@ -87,7 +98,7 @@ export interface IObject {
   get(option?: IObjectGetOption): Promise<IObject>;
   update(data: IObjectData, option?: IObjectUpdateOption): Promise<IObject>;
   delete(option?: IAuthOption): Promise<void>;
-  setApp(app: unknown): this;
+  setApp(app: IApp): this;
 }
 
 export interface IDate {

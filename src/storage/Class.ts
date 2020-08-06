@@ -1,10 +1,9 @@
 import { LCObject, ObjectCreateTask } from './Object';
 import { Query } from './Query';
-import { App } from '../App';
-import { IObjectAddOption, IObjectData, IClass, IObject } from '../types';
+import { IObjectAddOption, IObjectData, IClass, IObject, IApp } from '../types';
 
 export class Class extends Query implements IClass {
-  app: App;
+  app: IApp;
 
   object(id: string): IObject {
     return new LCObject(this.className, id, this.app);

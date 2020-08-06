@@ -1,4 +1,3 @@
-import { App } from '../App';
 import { removeReservedKeys, checkObjectTag } from '../utils';
 import {
   IObject,
@@ -9,17 +8,19 @@ import {
   IObjectData,
   IObjectOperateTask,
   IObjectAddOption,
+  IApp,
 } from '../types';
 import { ObjectEncoder, ObjectDecoder } from './ObjectEncoding';
 import { APIPath } from '../APIPath';
 import { IHTTPRequest } from '../Adapters';
+import { send } from '../http';
 
 export class ObjectCreateTask implements IObjectOperateTask {
   request: IHTTPRequest;
   responseBody: unknown;
 
   constructor(
-    public app: App,
+    public app: IApp,
     public className: string,
     public data: IObjectData,
     public option?: IObjectAddOption
@@ -39,7 +40,7 @@ export class ObjectCreateTask implements IObjectOperateTask {
   }
 
   async sendRequest(): Promise<unknown> {
-    const res = await this.app._uluru(this.request, this.option);
+    const res = await send(this.request, this.option).to(this.app, this.option);
     this.responseBody = res.body;
     return this.responseBody;
   }
@@ -81,7 +82,10 @@ export class ObjectGetTask implements IObjectOperateTask {
   }
 
   async sendRequest(): Promise<unknown> {
-    const res = await this.obj.app._uluru(this.request, this.option);
+    const res = await send(this.request, this.option).to(
+      this.obj.app,
+      this.option
+    );
     this.responseBody = res.body;
     return this.responseBody;
   }
@@ -165,12 +169,12 @@ export class ObjectDeleteTask extends ObjectGetTask
 }
 
 export class LCObject implements IObject {
-  app: App;
+  app: IApp;
   className: string;
   objectId: string;
   data?: IObjectData;
 
-  constructor(className: string, objectId: string, app?: App) {
+  constructor(className: string, objectId: string, app?: IApp) {
     this.app = app;
     this.className = className;
     this.objectId = objectId;
@@ -205,7 +209,7 @@ export class LCObject implements IObject {
     };
   }
 
-  setApp(app: App): this {
+  setApp(app: IApp): this {
     this.app = app;
     if (this.data) {
       const datas: unknown[] = [this.data];
@@ -233,6 +237,6 @@ export class LCObject implements IObject {
   }
 
   delete(option?: IAuthOption): Promise<void> {
-    return new ObjectDeleteTask(this, option).do() as Promise<undefined>;
+    return new ObjectDeleteTask(this, option).do().then();
   }
 }

@@ -1,6 +1,5 @@
 import { Class } from './Class';
 import { Qiniu, AWSS3 } from './file-provider';
-import { App } from '../App';
 import { Batch } from './Batch';
 import {
   IFile,
@@ -8,6 +7,7 @@ import {
   IUploadOption,
   IFileTokens,
   IObject,
+  IApp,
 } from '../types';
 import { LCObject } from './Object';
 import { ObjectDecoder } from './ObjectEncoding';
@@ -15,6 +15,7 @@ import { User, UserClass } from './User';
 import { ObjectFactory } from './ObjectFactory';
 import { APIPath } from '../APIPath';
 import { IHTTPResponse } from '../Adapters';
+import { send } from '../http';
 
 ObjectFactory.registerDefaultHandler(
   (className, objectId) => new LCObject(className, objectId)
@@ -22,7 +23,7 @@ ObjectFactory.registerDefaultHandler(
 ObjectFactory.registerHandler('_User', (objectId) => new User(objectId));
 
 export class Storage {
-  constructor(public app: App) {}
+  constructor(public app: IApp) {}
 
   class(name: string): Class {
     return new Class(this.app, name);
@@ -39,16 +40,16 @@ export class Storage {
   getFileProvider(name: string): IFileProvider {
     switch (name) {
       case 'qiniu':
-        return new Qiniu(this.app);
+        return new Qiniu();
       case 's3':
-        return new AWSS3(this.app);
+        return new AWSS3();
       default:
         throw new Error('Unsupported file uploader: ' + name);
     }
   }
 
   async upload(file: IFile, option?: IUploadOption): Promise<IObject> {
-    const res = await this.app._uluru(
+    const res = await send(
       {
         method: 'POST',
         path: APIPath.fileTokens,
@@ -62,7 +63,7 @@ export class Storage {
         },
       },
       option
-    );
+    ).to(this.app, option);
     const tokens = res.body as IFileTokens;
 
     const provider = this.getFileProvider(tokens.provider);
@@ -82,11 +83,14 @@ export class Storage {
     }
   }
 
-  _invokeFileCallback(token: string, success = true): Promise<IHTTPResponse> {
-    return this.app._uluru({
+  async _invokeFileCallback(
+    token: string,
+    success = true
+  ): Promise<IHTTPResponse> {
+    return await send({
       method: 'POST',
       path: APIPath.fileCallback,
       body: { token, result: success },
-    });
+    }).to(this.app);
   }
 }

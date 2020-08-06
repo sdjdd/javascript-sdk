@@ -1,9 +1,15 @@
-import { App } from '../App';
 import { isRegExp } from '../utils';
-import { IObject, IQuery, IObjectDataRaw, IQueryFindOption } from '../types';
+import {
+  IObject,
+  IQuery,
+  IObjectDataRaw,
+  IQueryFindOption,
+  IApp,
+} from '../types';
 import { ObjectDecoder } from './ObjectEncoding';
 import { APIPath } from '../APIPath';
 import { IHTTPRequest } from '../Adapters';
+import { send } from '../http';
 
 export type Condition =
   | '=='
@@ -33,7 +39,7 @@ export class Query implements IQuery {
   private _orderBy: OrderByAttribute[] = [];
   private _select = new Set<string>();
 
-  constructor(public app: App, public className: string) {}
+  constructor(public app: IApp, public className: string) {}
 
   static and(...queries: Query[]): Query {
     if (queries.length < 2) {
@@ -46,7 +52,7 @@ export class Query implements IQuery {
       if (queries[i].className != className) {
         throw new Error('All queries must belongs to same Class');
       }
-      if (queries[i].app.info.appId != app.info.appId) {
+      if (queries[i].app.appId != app.appId) {
         throw new Error('All queries must belongs to same App');
       }
     }
@@ -260,7 +266,7 @@ export class Query implements IQuery {
     const req = this._makeRequest();
     req.query.count = '1';
     req.query.limit = '0';
-    const res = await this.app._uluru(req);
+    const res = await send(req).to(this.app);
     return (res.body as { count: number }).count;
   }
 
@@ -317,7 +323,7 @@ export class Query implements IQuery {
   }
 
   async find(option?: IQueryFindOption): Promise<IObject[]> {
-    const res = await this.app._uluru(this._makeRequest(option));
+    const res = await send(this._makeRequest(option)).to(this.app);
 
     const results = (res.body as { results: IObjectDataRaw[] }).results;
     if (!results) {

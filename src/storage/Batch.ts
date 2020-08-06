@@ -1,4 +1,3 @@
-import { App } from '../App';
 import {
   LCObject,
   ObjectGetTask,
@@ -6,10 +5,11 @@ import {
   ObjectUpdateTask,
   ObjectDeleteTask,
 } from './Object';
-import { IObjectData, IObjectOperateTask } from '../types';
+import { IObjectData, IObjectOperateTask, IApp } from '../types';
 import { Class } from './Class';
 import { UluruError } from '../errors';
 import { APIPath } from '../APIPath';
+import { send } from '../http';
 
 interface IPromiseHandler {
   resolve: (value?: unknown) => void;
@@ -20,7 +20,7 @@ export class Batch {
   private promiseHandlers: IPromiseHandler[] = [];
   private tasks: Array<IObjectOperateTask> = [];
 
-  constructor(public app: App) {}
+  constructor(public app: IApp) {}
 
   add(clazz: Class, data: IObjectData): Promise<LCObject> {
     const promise = new Promise((resolve, reject) =>
@@ -64,11 +64,11 @@ export class Batch {
         body: task.request.body,
       });
     });
-    const res = await this.app._uluru({
+    const res = await send({
       method: 'POST',
       path: APIPath.batch,
       body: { requests },
-    });
+    }).to(this.app);
 
     const results = res.body as {
       error?: { code: number; error: string };
